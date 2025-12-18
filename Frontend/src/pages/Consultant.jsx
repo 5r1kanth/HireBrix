@@ -1,0 +1,83 @@
+import React, { useState } from "react";
+import Sidebar from "@/components/Dashboard/Sidebar";
+import Topbar from "@/components/Dashboard/Topbar";
+import {
+  consultancyName,
+  sidebarHeader,
+  sidebarContents,
+  sidebarFooter,
+  consultantInfo,
+} from "@/data/consultantData";
+
+import {
+  skillsData,
+  experienceData,
+  upcomingInterviewsData,
+  recentSubmissionsData,
+  interviewFunnelData,
+} from "@/data/consultantData";
+
+import Skillset from "@/components/Dashboard/Skillset";
+import Experience from "@/components/Dashboard/Experience";
+import UpcomingInterviews from "@/components/Dashboard/UpcomingInterviews";
+import Overview from "@/components/Dashboard/Overview";
+import RecentSubmissions from "@/components/Dashboard/RecentSubmissions";
+import InterviewFunnel from "@/components/Dashboard/InterviewFunnel";
+
+export default function Consultant() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+
+  return (
+    <div className="flex p-2 gap-1 bg-gray-100 h-screen">
+      <Sidebar
+        header={sidebarHeader}
+        user={consultantInfo}
+        contents={sidebarContents}
+        footer={sidebarFooter}
+        collapsed={!sidebarOpen}
+        onMenuClick={toggleSidebar}
+      />
+
+      <div className="flex flex-col flex-1 gap-1">
+        <Topbar
+          title={consultancyName}
+          user={consultantInfo}
+          onMenuClick={toggleSidebar}
+        />
+
+        <div className="flex-1 flex gap-1 overflow-auto rounded-md">
+          {/* LEFT SECTION */}
+          <div className="w-9/12 flex flex-col gap-1">
+            {/* Row 1 */}
+            <div className="flex gap-1">
+              <div className="w-8/12 rounded-md shadow">
+                <Overview />
+              </div>
+              <div className="w-4/12 rounded-md shadow">
+                <UpcomingInterviews interviews={upcomingInterviewsData} />
+              </div>
+            </div>
+
+            {/* Row 2 */}
+            <div className="rounded-md shadow">
+              <InterviewFunnel data={interviewFunnelData} />
+            </div>
+
+            {/* Row 3 */}
+            <div className="rounded-md shadow flex-1">
+              <RecentSubmissions submissions={recentSubmissionsData} />
+            </div>
+          </div>
+
+          {/* RIGHT SECTION */}
+          <div className="w-3/12 rounded-br-md gap-1 flex flex-col">
+            <Skillset skills={skillsData} />
+            <Experience experience={experienceData} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
