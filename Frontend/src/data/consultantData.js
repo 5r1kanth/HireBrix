@@ -1,5 +1,5 @@
 import { ClipboardDocumentListIcon, CalendarDaysIcon, UserGroupIcon, UserCircleIcon, BriefcaseIcon, Cog6ToothIcon, AcademicCapIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
-import Logo from "@/assets/colorlogo.png"; // replace with your logo path
+import Logo from "@/assets/testlogo.png"; // replace with your logo path
 import ConsultantPhoto from "@/assets/userProfile.svg"; // replace with consultant photo
 
 export const consultancyName = "Consultancy Name";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import Logo from "@assets/colorlogo.png";
+import Logo from "@assets/Testlogo.png";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
 import { motion, AnimatePresence } from "framer-motion";
 import { NAVBAR } from "../../data/Landing";
@@ -22,7 +22,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <img src={Logo} alt="HireBrix" className="w-10 h-10 rounded-lg" />
+          <img src={Logo} alt="HireBrix" className="w-10 h-10" />
           <div className="text-left">
             <div className="text-lg font-semibold">HireBrix</div>
             <div className="text-xs text-gray-500 -mt-0.5">Track & Hire</div>

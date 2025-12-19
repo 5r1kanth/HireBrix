@@ -24,13 +24,12 @@ export default function AssignedConsultants({ consultants = [] }) {
                   {consultant.name}
                 </h3>
 
-                {/* Role & Experience */}
-                <p className="text-xs text-gray-600">
-                  {consultant.role}
-                </p>
+                {/* Role */}
+                <p className="w-1/2 text-xs text-gray-600 text-right truncate">{consultant.role}</p>
               </div>
-              {/* Primary Skills */}
-              <div className="flex flex-wrap gap-2 mt-3">
+              {/* Primary Skills & Experience */}
+              <div className="flex justify-between items-center mt-2">
+              <div className="flex flex-wrap gap-2 w-5/6">
                 {consultant.primarySkills.map((skill, i) => (
                   <span
                     key={i}
@@ -39,6 +38,10 @@ export default function AssignedConsultants({ consultants = [] }) {
                     {skill}
                   </span>
                 ))}
+              </div>
+              <div className="w-1/6 text-right">
+                <p className="text-xs text-gray-600">{consultant.experience} Years</p>
+              </div>
               </div>
             </div>
           ))}
