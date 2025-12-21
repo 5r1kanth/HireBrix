@@ -7,7 +7,8 @@ export default function Sidebar({
   contents,
   footer,
   collapsed,
-  onMenuClick,
+  onMenuClick,  // Toggle collapse/expand
+  onSelect,      // Update main content
 }) {
   const [openDropdowns, setOpenDropdowns] = useState([]);
   const [activeItem, setActiveItem] = useState(null);
@@ -19,8 +20,15 @@ export default function Sidebar({
   };
 
   const handleClick = (item) => {
+    if (collapsed) {
+      // Expand sidebar first
+      onMenuClick?.();
+      return; // don't change right content yet
+    }
+
+    // Highlight and update content
     setActiveItem(item.name);
-    onMenuClick?.(item);
+    onSelect?.(item);
   };
 
   return (
@@ -38,8 +46,16 @@ export default function Sidebar({
         <img src={header.logo} alt="logo" className="w-8 h-8" />
         {!collapsed && (
           <div className="text-left">
-            <div className="text-xl inknut-antiqua-extrabold uppercase bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">HireBrix</div>
-            <div className="text-md tracking-wide inknut-antiqua-bold -mt-2 captalize">Track <span className="bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">&</span> Hire</div>
+            <div className="text-xl inknut-antiqua-extrabold uppercase bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">
+              HireBrix
+            </div>
+            <div className="text-md tracking-wide inknut-antiqua-bold -mt-2 captalize">
+              Track{" "}
+              <span className="bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">
+                &
+              </span>{" "}
+              Hire
+            </div>
           </div>
         )}
       </div>
@@ -54,8 +70,7 @@ export default function Sidebar({
             }`}
             onClick={() => {
               setActiveItem(null);
-              if (collapsed) {onMenuClick?.({ name: null });}
-               // Reset to show all sections
+              onSelect?.(null); // Reset dashboard to default
             }}
           >
             <img
@@ -75,15 +90,10 @@ export default function Sidebar({
             {item.submenu ? (
               <>
                 <button
-                  onClick={() => {
-                    if (collapsed) handleClick(item);
-                    else toggleDropdown(item.name);
-                  }}
+                  onClick={() => collapsed ? handleClick(item) : toggleDropdown(item.name)}
                   className={`flex items-center gap-2 w-full p-2 rounded-md text-gray-700 hover:bg-gray-100 transition ${
                     collapsed && "justify-center"
-                  } ${
-                    activeItem === item.name ? "bg-gray-300 font-semibold" : ""
-                  }`}
+                  } ${activeItem === item.name ? "bg-gray-300 font-semibold" : ""}`}
                 >
                   {!collapsed && (
                     <ChevronRightIcon
@@ -93,9 +103,7 @@ export default function Sidebar({
                     />
                   )}
                   <item.icon className="w-4 h-4" />
-                  {!collapsed && (
-                    <span className="font-medium">{item.name}</span>
-                  )}
+                  {!collapsed && <span className="font-medium">{item.name}</span>}
                 </button>
 
                 {!collapsed && (
@@ -111,9 +119,7 @@ export default function Sidebar({
                         key={sub.name}
                         onClick={() => handleClick(sub)}
                         className={`block w-full text-left p-1 rounded-md text-gray-600 hover:bg-gray-100 transition ${
-                          activeItem === sub.name
-                            ? "bg-gray-200 font-semibold"
-                            : ""
+                          activeItem === sub.name ? "bg-gray-200 font-semibold" : ""
                         }`}
                       >
                         {sub.name}
@@ -124,16 +130,12 @@ export default function Sidebar({
               </>
             ) : (
               <button
-                onClick={() => {if (collapsed) {handleClick(item)}}}
+                onClick={() => handleClick(item)}
                 className={`flex items-center gap-2 w-full p-2 rounded-md text-gray-700 hover:bg-gray-100 transition ${
                   collapsed && "justify-center"
-                } ${
-                  activeItem === item.name ? "bg-gray-300 font-semibold" : ""
-                }`}
+                } ${activeItem === item.name ? "bg-gray-300 font-semibold" : ""}`}
               >
-                {!collapsed && (
-                  <ChevronRightIcon className="w-4 h-4 opacity-40" />
-                )}
+                {!collapsed && <ChevronRightIcon className="w-4 h-4 opacity-40" />}
                 <item.icon className="w-4 h-4" />
                 {!collapsed && <span className="font-medium">{item.name}</span>}
               </button>
@@ -147,7 +149,7 @@ export default function Sidebar({
         {footer.map((item) => (
           <button
             key={item.name}
-            onClick={() => (collapsed ? onMenuClick?.(item) : item.onClick?.())}
+            onClick={item.onClick}
             className={`flex items-center gap-3 w-full p-2 rounded-md text-gray-700 hover:bg-gray-100 transition ${
               collapsed && "justify-center"
             }`}

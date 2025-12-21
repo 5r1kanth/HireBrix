@@ -1,4 +1,4 @@
-import Logo from "@/assets/colorlogo.png"
+import Logo from "@/assets/testlogo.png"
 
 export const sidebarHeader = {
   logo: Logo,
