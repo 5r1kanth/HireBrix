@@ -37,9 +37,9 @@ export default function Sidebar({
       >
         <img src={header.logo} alt="logo" className="w-8 h-8" />
         {!collapsed && (
-          <div>
-            <p className="font-semibold text-gray-900">{header.title}</p>
-            <p className="text-xs text-gray-500">{header.subtitle}</p>
+          <div className="text-left">
+            <div className="text-xl inknut-antiqua-extrabold uppercase bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">HireBrix</div>
+            <div className="text-md tracking-wide inknut-antiqua-bold -mt-2 captalize">Track <span className="bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">&</span> Hire</div>
           </div>
         )}
       </div>

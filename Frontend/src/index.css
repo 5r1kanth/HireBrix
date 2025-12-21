@@ -3,6 +3,7 @@
 ========================= */
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Inknut+Antiqua:wght@300;400;500;600;700;800;900&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -15,6 +16,92 @@ html {
   scrollbar-width: none;     /* Firefox */
 }
 
+.inknut-antiqua-light {
+  font-family: "Inknut Antiqua", serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.inknut-antiqua-regular {
+  font-family: "Inknut Antiqua", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inknut-antiqua-medium {
+  font-family: "Inknut Antiqua", serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.inknut-antiqua-semibold {
+  font-family: "Inknut Antiqua", serif;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.inknut-antiqua-bold {
+  font-family: "Inknut Antiqua", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.inknut-antiqua-extrabold {
+  font-family: "Inknut Antiqua", serif;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.inknut-antiqua-black {
+  font-family: "Inknut Antiqua", serif;
+  font-weight: 900;
+  font-style: normal;
+}
+
+
+.alegreya-light {
+  font-family: "Alegreya", serif;
+  font-weight: 300;
+  font-style: normal;
+}
+
+.alegreya-regular {
+  font-family: "Alegreya", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.alegreya-medium {
+  font-family: "Alegreya", serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.alegreya-semibold {
+  font-family: "Alegreya", serif;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.alegreya-bold {
+  font-family: "Alegreya", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.alegreya-extrabold {
+  font-family: "Alegreya", serif;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.alegreya-black {
+  font-family: "Alegreya", serif;
+  font-weight: 900;
+  font-style: normal;
+}
+
+
 /* =========================
    CSS Variables
 ========================= */
@@ -23,10 +110,12 @@ html {
   --accent2: #e68eba; /* pink */
   --accent3: #eacb96; /* amber */
 
-  --electric-blue: #2563EB;
+  /* --electric-blue: #2563EB; */
+  --electric-blue: #2087E3;
   --royal-blue: #1E40AF;
 
-  --hiring-lime: #A3E635;
+  /* --hiring-lime: #A3E635; */
+  --hiring-lime: #E7EF55;
   --aqua-tint: #CCFBF1;
 
   --light-gray: #E5E7EB;
@@ -104,9 +193,9 @@ html {
 /* =========================
    Text Colors
 ========================= */
-.text-electric-blue { color: var(--electric-blue); }
+.text-electric-blue { color: var(--safe-side-blue); }
 .text-royal-blue { color: var(--royal-blue); }
-.text-hiring-lime { color: var(--hiring-lime); }
+.text-hiring-lime { color: var(--safe-side-lime); }
 .text-aqua-tint { color: var(--aqua-tint); }
 .text-light-gray { color: var(--light-gray); }
 .text-almost-black { color: var(--almost-black); }
