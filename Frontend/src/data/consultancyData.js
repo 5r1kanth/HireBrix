@@ -7,3 +7,5 @@ export const sidebarHeader = {
 };
 
 export const consultancyName = "Consultancy Name"
+
+export const COMPANY_ID = "69480f669bf6de88219dd7be"

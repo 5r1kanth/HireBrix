@@ -21,11 +21,23 @@ public class User {
     private String email;
 
     @Indexed
-    private String role;
+    private String role; // Admin, Manager, Team Lead, Recruiter, Consultant
 
-    private String status;
-    private String googleId;
+    private String status; // Active / Inactive
 
-    private Instant createdAt;
+    // Name fields
+    private String firstName;
+    private String middleName;
+    private String lastName;
+    private String fullName; // optional, can be built from first + middle + last
+
+    // OAuth fields
+    @Indexed(unique = true, sparse = true)
+    private String googleId; // only for Google OAuth users
+    private String picture;  // profile picture URL from Google
+
+    private String department;
+
+    private Instant createdAt = Instant.now();
+    private Instant updatedAt = Instant.now();
 }
-

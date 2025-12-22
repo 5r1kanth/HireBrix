@@ -1,6 +1,6 @@
 export default function DashboardMetrics({ roleCounts, activeRole, onRoleSelect }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 my-6">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 my-10">
       {Object.entries(roleCounts).map(([role, count]) => (
         <div
           key={role}
