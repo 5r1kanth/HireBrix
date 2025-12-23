@@ -38,6 +38,9 @@ public class User {
 
     private String department;
 
+    private boolean isDeleted = false;
+    private Instant deletedAt;
+
     private Instant createdAt = Instant.now();
     private Instant updatedAt = Instant.now();
 }

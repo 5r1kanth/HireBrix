@@ -1,6 +1,6 @@
-export default function DashboardMetrics({ roleCounts, activeRole, onRoleSelect }) {
+export default function DashboardMetrics({ roleCounts, activeRole, onRoleSelect, deletedCount }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-6 gap-4 my-10">
+    <div className="grid grid-cols-2 md:grid-cols-7 gap-4 my-4">
       {Object.entries(roleCounts).map(([role, count]) => (
         <div
           key={role}
@@ -11,6 +11,15 @@ export default function DashboardMetrics({ roleCounts, activeRole, onRoleSelect 
           <div className="text-2xl font-bold mt-1">{count}</div>
         </div>
       ))}
+
+      {/* Deleted Users Card
+      <div
+        onClick={() => onRoleSelect("Deleted")}
+        className={`cursor-pointer rounded-md bg-red-100 shadow p-4 text-center transition border
+          ${activeRole === "Deleted" ? "border-red-500 ring-2 ring-red-500" : "border-transparent hover:shadow-md"}`}>
+        <div className="text-red-500 text-sm font-semibold">Deleted Users</div>
+        <div className="text-2xl font-bold mt-1">{deletedCount}</div>
+      </div> */}
     </div>
   );
 }

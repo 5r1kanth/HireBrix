@@ -61,9 +61,22 @@ export const sidebarFooter = [
 
 // Table columns
 export const usersColumns = [
-  { label: "Name", accessor: "firstName" },
-  { label: "Email", accessor: "email" },
-  { label: "Role", accessor: "role" },
-  { label: "Department", accessor: "department" },
-  { label: "Status", accessor: "status" },
+  { label: "First", accessor: "firstName", width: "140px" },
+  { label: "Last", accessor: "lastName", width: "120px" },
+  { label: "Email", accessor: "email", width: "220px" },
+  { label: "Role", accessor: "role", width: "120px" },
+  { label: "Department", accessor: "department", width: "150px" },
+  { label: "Status", accessor: "status", width: "100px" },
 ];
+
+
+export const ROLE_CONFIG = {
+  Admin: "Add Admin",
+  Manager: "Add Manager",
+  "Team Lead": "Add Team Lead",
+  Recruiter: "Add Recruiter",
+  Consultant: "Add Consultant",
+};
+
+export const rowHeight = 40;
+export const actionColumnWidth = 120;

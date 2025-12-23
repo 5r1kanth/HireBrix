@@ -8,66 +8,108 @@ import AddUserForm from "@/components/Dashboard/AddUserForm";
 import { adminInfo, sidebarContents, sidebarFooter, usersColumns } from "@/data/adminData";
 import { sidebarHeader, consultancyName, COMPANY_ID } from "@/data/consultancyData";
 
-import { getUsersByCompany } from "@/api/users.api";
+import { getUsersByCompany, updateUser, softDeleteUser, restoreUser } from "@/api/users.api";
 
 export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeRole, setActiveRole] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]); // all users including deleted
   const [loading, setLoading] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
-  /* Toggle sidebar */
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
-  /* Fetch users from API */
-  const fetchUsers = async () => {
+  const fetchAllUsers = async () => {
     try {
       setLoading(true);
-      const data = await getUsersByCompany(COMPANY_ID);
-      setUsers(data);
+      const users = await getUsersByCompany(COMPANY_ID); // fetch all users
+      setAllUsers(Array.isArray(users) ? users : []);
     } catch (err) {
       console.error("Failed to fetch users", err);
+      setAllUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchAllUsers();
   }, []);
 
-  /* Role counts for metrics (case-sensitive) */
+  // Filter active users
+  const activeUsers = useMemo(() => allUsers.filter((u) => !u.deleted), [allUsers]);
+
+  // Count metrics for roles (only active users)
   const roleCounts = useMemo(
     () => ({
-      Total: users.length,
-      Admin: users.filter((u) => u.role === "Admin").length,
-      Manager: users.filter((u) => u.role === "Manager").length,
-      "Team Lead": users.filter((u) => u.role === "Team Lead").length,
-      Recruiter: users.filter((u) => u.role === "Recruiter").length,
-      Consultant: users.filter((u) => u.role === "Consultant").length,
+      Active: activeUsers.length,
+      Admin: activeUsers.filter((u) => u.role === "Admin").length,
+      Manager: activeUsers.filter((u) => u.role === "Manager").length,
+      "Team Lead": activeUsers.filter((u) => u.role === "Team Lead").length,
+      Recruiter: activeUsers.filter((u) => u.role === "Recruiter").length,
+      Consultant: activeUsers.filter((u) => u.role === "Consultant").length,
+      Deleted: allUsers.filter((u) => u.deleted).length,
     }),
-    [users]
+    [activeUsers]
   );
 
-  /* Filtered users based on activeRole */
-  const displayedUsers = useMemo(() => {
-    if (!activeRole || activeRole === "Total") return users;
-    return users.filter((u) => u.role === activeRole);
-  }, [activeRole, users]);
+  const deletedUsers = useMemo(() => allUsers.filter((u) => u.deleted), [allUsers]);
 
-  /* Callback after adding a user */
-  const handleAddUser = () => {
-    fetchUsers();
-    setActiveRole(null);
-    setSelectedSection(null);
-  };
+  // Users to display in table
+  const displayedUsers = useMemo(() => {
+    if (showDeleted) return deletedUsers;
+    if (!activeRole || activeRole === "Active") return activeUsers;
+    return activeUsers.filter((u) => u.role === activeRole);
+  }, [activeRole, showDeleted, activeUsers, deletedUsers]);
 
   const addRole = selectedSection?.startsWith("Add ") && selectedSection.replace("Add ", "");
 
+  const handleAddUser = () => {
+    fetchAllUsers();
+    setActiveRole(null);
+    setSelectedSection(null);
+    setShowDeleted(false);
+  };
+
+  const handleUpdateUser = async (updatedUser) => {
+    try {
+      setLoading(true);
+      await updateUser(updatedUser.id, updatedUser);
+      fetchAllUsers();
+    } catch (err) {
+      console.error("Failed to update user", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    try {
+      setLoading(true);
+      await softDeleteUser(user.id);
+      fetchAllUsers();
+    } catch (err) {
+      console.error("Failed to delete user", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestoreUser = async (user) => {
+    try {
+      setLoading(true);
+      await restoreUser(user.id);
+      fetchAllUsers();
+    } catch (err) {
+      console.error("Failed to restore user", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex p-2 gap-1 bg-gray-100 h-screen">
-      {/* Sidebar */}
       <Sidebar
         header={sidebarHeader}
         user={adminInfo}
@@ -79,29 +121,28 @@ export default function Admin() {
           if (!item) {
             setActiveRole(null);
             setSelectedSection(null);
+            setShowDeleted(false);
             return;
           }
-
           if (item.name.startsWith("All ")) {
-            // Remove last char if needed
             const role = item.name.replace("All ", "").slice(0, -1);
             setActiveRole(role);
             setSelectedSection(null);
+            setShowDeleted(false);
             return;
           }
-
           if (item.name.startsWith("Add ")) {
             setSelectedSection(item.name);
             setActiveRole(null);
+            setShowDeleted(false);
             return;
           }
-
           setActiveRole(null);
           setSelectedSection(null);
+          setShowDeleted(false);
         }}
       />
 
-      {/* Main Content */}
       <div className="flex flex-col flex-1 gap-1">
         <Topbar title={consultancyName} user={adminInfo} onMenuClick={toggleSidebar} />
 
@@ -110,11 +151,32 @@ export default function Admin() {
             <AddUserForm role={addRole} onAddUser={handleAddUser} />
           ) : (
             <>
-              {/* Dashboard Metrics */}
-              {selectedSection === null && <DashboardMetrics roleCounts={roleCounts} activeRole={activeRole} onRoleSelect={setActiveRole} />}
+              <DashboardMetrics
+                roleCounts={roleCounts}
+                activeRole={activeRole}
+                onRoleSelect={(role) => {
+                  if (role === "Deleted") {
+                    setShowDeleted(true);
+                    setActiveRole(null);
+                  } else {
+                    setActiveRole(role);
+                    setShowDeleted(false);
+                  }
+                }}
+                deletedCount={deletedUsers.length}
+              />
 
-              {/* Users Table */}
-              <UsersTable title={activeRole ? `${activeRole}s` : "All Users"} columns={usersColumns} data={displayedUsers} itemsPerPage={10} loading={loading} />
+              <UsersTable
+                title={activeRole ? `${activeRole}s` : showDeleted ? "Deleted Users" : "All Users"}
+                columns={usersColumns}
+                data={displayedUsers}
+                itemsPerPage={10}
+                onSave={handleUpdateUser}
+                onDelete={handleDeleteUser}
+                onRestore={handleRestoreUser}
+                showDeleted={showDeleted}
+                loading={loading}
+              />
             </>
           )}
         </div>
