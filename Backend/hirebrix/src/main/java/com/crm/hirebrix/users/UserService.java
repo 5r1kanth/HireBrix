@@ -127,4 +127,17 @@ public class UserService {
     public List<User> getDeletedUsersByCompany(String companyId) {
         return userRepository.findByCompanyIdAndIsDeletedTrue(companyId);
     }
+
+    public List<User> searchUsers(String companyId, String keyword) {
+        if (keyword == null || keyword.isEmpty()) {
+            return getUsersByCompany(companyId);
+        }
+        return userRepository
+                .findByCompanyIdAndIsDeletedFalseAndFullNameContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndEmailContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndRoleContainingIgnoreCase(
+                        companyId, keyword,
+                        companyId, keyword,
+                        companyId, keyword,
+                        companyId, keyword
+                );
+    }
 }

@@ -158,9 +158,12 @@ export default function Admin() {
                   if (role === "Deleted") {
                     setShowDeleted(true);
                     setActiveRole(null);
-                  } else {
-                    setActiveRole(role);
+                  } else if (role === "Active") {
                     setShowDeleted(false);
+                    setActiveRole(null); // important! null for all active users
+                  } else {
+                    setShowDeleted(false);
+                    setActiveRole(role); // Admin, Manager, etc.
                   }
                 }}
                 deletedCount={deletedUsers.length}
@@ -169,12 +172,13 @@ export default function Admin() {
               <UsersTable
                 title={activeRole ? `${activeRole}s` : showDeleted ? "Deleted Users" : "All Users"}
                 columns={usersColumns}
-                data={displayedUsers}
+                data={allUsers} // ✅ IMPORTANT
                 itemsPerPage={10}
                 onSave={handleUpdateUser}
                 onDelete={handleDeleteUser}
                 onRestore={handleRestoreUser}
                 showDeleted={showDeleted}
+                activeRole={activeRole}
                 loading={loading}
               />
             </>

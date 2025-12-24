@@ -18,4 +18,11 @@ public interface UserRepository extends MongoRepository<User, String> {
     List<User> findByCompanyIdAndIsDeletedTrue(String companyId);
 
     List<User> findByCompanyId(String companyId);
+
+    List<User> findByCompanyIdAndIsDeletedFalseAndFullNameContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndEmailContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndRoleContainingIgnoreCase(
+            String companyId1, String fullName,
+            String companyId2, String email,
+            String companyId3, String role,
+            String companyId4, String department
+    );
 }

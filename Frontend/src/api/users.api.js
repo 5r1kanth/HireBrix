@@ -21,14 +21,11 @@ export const updateUser = (userId, user) => {
 };
 
 /* =========================
-   Get all active users for a company
+   Get all active users for a company with optional search
 ========================= */
-export const getUsersByCompany = async (companyId) => {
-    const users = await apiRequest(`/users?companyId=${companyId}`);
-    // Only return users that are NOT soft-deleted
+export const getUsersByCompany = async (companyId, search = "") => {
+    const users = await apiRequest(`/users?companyId=${companyId}${search ? `&search=${search}` : ""}`);
     return Array.isArray(users) ? users : [];
-
-    // return Array.isArray(users) ? users.filter((u) => !u.deleted) : [];
 };
 
 /* =========================
@@ -36,7 +33,6 @@ export const getUsersByCompany = async (companyId) => {
 ========================= */
 export const getDeletedUsersByCompany = async (companyId) => {
     const users = await apiRequest(`/users/deleted?companyId=${companyId}`);
-    // Only return soft-deleted users
     return Array.isArray(users) ? users.filter((u) => u.deleted) : [];
 };
 
@@ -53,7 +49,6 @@ export const softDeleteUser = (userId) => {
    Restore a deleted user
 ========================= */
 export const restoreUser = (userId) => {
-    // For restore, we can just send PUT with updated status and isDeleted=false
     return apiRequest(`/users/${userId}/restore`, {
         method: "PATCH",
         body: JSON.stringify({ isDeleted: false, status: "Active" }),

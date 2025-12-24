@@ -1,25 +1,31 @@
 export default function DashboardMetrics({ roleCounts, activeRole, onRoleSelect, deletedCount }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-7 gap-4 my-4">
-      {Object.entries(roleCounts).map(([role, count]) => (
-        <div
-          key={role}
-          onClick={() => onRoleSelect(activeRole === role ? null : role)}
-          className={`cursor-pointer rounded-md bg-white shadow p-4 text-center transition border
-            ${activeRole === role ? "border-[var(--hiring-lime)] ring-2 ring-[var(--hiring-lime)]" : "border-transparent hover:shadow-md"}`}>
-          <div className="text-gray-500 text-sm font-semibold">{role}</div>
-          <div className="text-2xl font-bold mt-1">{count}</div>
-        </div>
-      ))}
+    <div className="grid grid-cols-2 md:grid-cols-7 gap-4 my-2">
+      {Object.entries(roleCounts).map(([role, count]) => {
+        // Determine card classes
+        let cardClass = "cursor-pointer rounded-md shadow p-4 text-center transition border";
 
-      {/* Deleted Users Card
-      <div
-        onClick={() => onRoleSelect("Deleted")}
-        className={`cursor-pointer rounded-md bg-red-100 shadow p-4 text-center transition border
-          ${activeRole === "Deleted" ? "border-red-500 ring-2 ring-red-500" : "border-transparent hover:shadow-md"}`}>
-        <div className="text-red-500 text-sm font-semibold">Deleted Users</div>
-        <div className="text-2xl font-bold mt-1">{deletedCount}</div>
-      </div> */}
+        if (activeRole === role) {
+          // Active card selected
+          if (role === "Deleted") {
+            cardClass += " bg-red-100 border-red-500 ring-2 ring-red-500";
+          } else {
+            cardClass += " border-[var(--hiring-lime)] ring-2 ring-[var(--hiring-lime)]";
+          }
+        } else {
+          // Not selected
+          cardClass += " bg-white border-transparent hover:shadow-md";
+        }
+
+        const textColor = role === "Deleted" ? "text-red-500" : role === "Active" ? "text-green-500" : "text-gray-500";
+
+        return (
+          <div key={role} onClick={() => onRoleSelect(activeRole === role ? null : role)} className={cardClass}>
+            <div className={`text-sm font-semibold ${textColor}`}>{role}</div>
+            <div className="text-2xl font-bold mt-1">{count}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

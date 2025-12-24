@@ -28,9 +28,19 @@ public class UserController {
        GET ACTIVE USERS BY COMPANY
     ========================= */
     @GetMapping
-    public ApiResponse<List<User>> getUsers(@RequestParam String companyId) {
+    public ApiResponse<List<User>> getUsers(
+            @RequestParam String companyId,
+            @RequestParam(required = false) String search
+    ) {
+        if (search != null && !search.isEmpty()) {
+            return new ApiResponse<>(true, userService.searchUsers(companyId, search));
+        }
         return new ApiResponse<>(true, userService.getUsersByCompany(companyId));
     }
+//    @GetMapping
+//    public ApiResponse<List<User>> getUsers(@RequestParam String companyId) {
+//        return new ApiResponse<>(true, userService.getUsersByCompany(companyId));
+//    }
 
     /* =========================
        UPDATE USER
@@ -69,4 +79,10 @@ public class UserController {
     public ApiResponse<List<User>> getDeletedUsers(@RequestParam String companyId) {
         return new ApiResponse<>(true, userService.getDeletedUsersByCompany(companyId));
     }
+
+    /* =========================
+       SEARCHING USERS
+    ========================= */
+
+
 }
