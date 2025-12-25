@@ -21,7 +21,7 @@ public class UserController {
     ========================= */
     @PostMapping
     public ApiResponse<User> createUser(@RequestBody User user) {
-        return new ApiResponse<>(true, userService.createUser(user));
+        return new ApiResponse<>(true, userService.createUserAndSendInvite(user));
     }
 
     /* =========================

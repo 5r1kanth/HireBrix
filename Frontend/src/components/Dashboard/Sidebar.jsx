@@ -19,7 +19,12 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
   return (
     <aside className={`flex flex-col h-[calc(100vh-16px)] bg-white border-r border-gray-300 shadow-md transition-all duration-300 rounded-md ${collapsed ? "w-16" : "w-1/6"}`}>
       {/* Header */}
-      <div className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 transition shrink-0 shadow-sm ${collapsed && "justify-center"}`}>
+      <div
+        className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 transition shrink-0 shadow-sm ${collapsed && "justify-center"}`}
+        onClick={() => {
+          setActiveItem(null);
+          onSelect?.(null);
+        }}>
         <img src={header.logo} alt="logo" className="w-8 h-8" />
         {!collapsed && (
           <div className="text-left">

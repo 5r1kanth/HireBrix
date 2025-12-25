@@ -175,8 +175,8 @@ export default function UsersTable({ title, columns, data = [], itemsPerPage = 1
                       </div>
                     ) : (
                       <>
-                        <PencilSquareIcon onClick={() => handleEditClick(row)} className="w-5 h-5 inline cursor-pointer text-blue-600" title="Edit" />
-                        <TrashIcon onClick={() => setDeleteTarget(row)} className="w-5 h-5 inline ml-2 cursor-pointer text-red-600" title="Delete" />
+                        <PencilSquareIcon onClick={() => handleEditClick(row)} className="w-5 h-5 inline cursor-pointer text-blue-600" />
+                        <TrashIcon onClick={() => setDeleteTarget(row)} className="w-5 h-5 inline ml-2 cursor-pointer text-red-600" />
                       </>
                     )}
                   </td>

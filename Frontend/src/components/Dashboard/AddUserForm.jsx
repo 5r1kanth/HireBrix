@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
-import { createUser, updateUser } from "@/api/users.api";
+import { useState } from "react";
+import { createUser } from "@/api/users.api";
 import { COMPANY_ID } from "@/data/consultancyData";
-import { ROLE_CONFIG } from "@/data/adminData"; // You can export ROLE_CONFIG from adminData
+import { ROLE_CONFIG } from "@/data/adminData";
 
-export default function AddUserForm({ role = "Admin", onAddUser, userData = null }) {
+export default function AddUserForm({ role = "Admin", onAddUser }) {
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -16,21 +16,6 @@ export default function AddUserForm({ role = "Admin", onAddUser, userData = null
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Prefill form when editing
-  useEffect(() => {
-    if (userData) {
-      setFormData({
-        firstName: userData.firstName || "",
-        middleName: userData.middleName || "",
-        lastName: userData.lastName || "",
-        email: userData.email || "",
-        department: userData.department || "",
-        role: userData.role || role,
-        status: userData.status || "Active",
-      });
-    }
-  }, [userData, role]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,35 +43,29 @@ export default function AddUserForm({ role = "Admin", onAddUser, userData = null
       role: formData.role,
       department: formData.department.trim(),
       status: formData.status,
-      firstName: capitalize(formData.firstName),
-      middleName: capitalize(formData.middleName),
-      lastName: capitalize(formData.lastName),
+      firstName: capitalize(formData.firstName).trim(),
+      middleName: capitalize(formData.middleName).trim(),
+      lastName: capitalize(formData.lastName).trim(),
     };
 
     try {
       setLoading(true);
 
-      if (userData && userData.id) {
-        // Update existing user
-        await updateUser(userData.id, payload);
-      } else {
-        // Create new user
-        await createUser(payload);
-      }
+      // Only create new user
+      await createUser(payload);
 
       onAddUser(); // Refresh parent table
-      // Reset form only if adding new user
-      if (!userData) {
-        setFormData({
-          firstName: "",
-          middleName: "",
-          lastName: "",
-          email: "",
-          department: "",
-          role,
-          status: "Active",
-        });
-      }
+
+      // Reset form
+      setFormData({
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        email: "",
+        department: "",
+        role,
+        status: "Active",
+      });
     } catch (err) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -97,7 +76,7 @@ export default function AddUserForm({ role = "Admin", onAddUser, userData = null
   return (
     <div className="bg-white shadow rounded-md p-6 w-full max-w-5xl mx-auto">
       {/* Title */}
-      <h2 className="text-xl font-semibold mb-6 text-center">{userData ? `Edit ${formData.role}` : ROLE_CONFIG[role] || "Add User"}</h2>
+      <h2 className="text-xl font-semibold mb-6 text-center">{ROLE_CONFIG[role] || "Add User"}</h2>
 
       {/* Error */}
       {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded mb-4">{error}</div>}
@@ -111,16 +90,7 @@ export default function AddUserForm({ role = "Admin", onAddUser, userData = null
         </div>
 
         {/* Email */}
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          className="p-3 border rounded"
-          required
-          disabled={!!userData} // Prevent email edit for existing users
-        />
+        <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} className="p-3 border rounded" required />
 
         {/* Department */}
         <input type="text" name="department" placeholder="Department" value={formData.department} onChange={handleChange} className="p-3 border rounded" />
@@ -138,7 +108,7 @@ export default function AddUserForm({ role = "Admin", onAddUser, userData = null
 
         {/* Submit */}
         <button type="submit" disabled={loading} className="bg-blue-600 text-white p-3 rounded hover:bg-blue-700 transition mt-2 disabled:opacity-50">
-          {loading ? "Saving..." : userData ? "Update User" : ROLE_CONFIG[role] || "Add User"}
+          {loading ? "Saving..." : ROLE_CONFIG[role] || "Add User"}
         </button>
       </form>
     </div>

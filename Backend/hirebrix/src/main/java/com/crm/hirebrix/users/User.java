@@ -23,7 +23,7 @@ public class User {
     @Indexed
     private String role; // Admin, Manager, Team Lead, Recruiter, Consultant
 
-    private String status; // Active / Inactive
+    private String status; // Active / Inactive / Invited
 
     // Name fields
     private String firstName;
@@ -37,6 +37,9 @@ public class User {
     private String picture;  // profile picture URL from Google
 
     private String department;
+
+    private Instant invitedAt;     // when invite email sent
+    private Instant activatedAt;   // when user accepted invite
 
     private boolean isDeleted = false;
     private Instant deletedAt;
