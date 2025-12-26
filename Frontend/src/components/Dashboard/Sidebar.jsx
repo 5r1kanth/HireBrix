@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 
 export default function Sidebar({ header, user, contents, footer, collapsed, onMenuClick, onSelect }) {
@@ -16,9 +16,20 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
     onSelect?.(item);
   };
 
+  const handleLogout = () => {
+    // Clear all user session info
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+
+    // Redirect to login
+    window.location.href = "/login";
+  };
+
   return (
     <aside className={`flex flex-col h-[calc(100vh-16px)] bg-white border-r border-gray-300 shadow-md transition-all duration-300 rounded-md ${collapsed ? "w-16" : "w-1/6"}`}>
-      {/* Header */}
+      {/* Logo / Header */}
       <div
         className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 transition shrink-0 shadow-sm ${collapsed && "justify-center"}`}
         onClick={() => {
@@ -28,19 +39,16 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
         <img src={header.logo} alt="logo" className="w-8 h-8" />
         {!collapsed && (
           <div className="text-left">
-            <div className="text-xl inknut-antiqua-extrabold uppercase bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">
-              HireBrix
-            </div>
-            <div className="text-md tracking-wide inknut-antiqua-bold -mt-2 captalize">
-              Track <span className="bg-gradient-to-r from-[var(--electric-blue)] to-[var(--hiring-lime)] bg-clip-text text-transparent">&</span> Hire
+            <div className="text-xl font-extrabold uppercase bg-gradient-to-r from-blue-500 to-green-400 bg-clip-text text-transparent">HireBrix</div>
+            <div className="text-md tracking-wide font-bold -mt-2">
+              Track <span className="bg-gradient-to-r from-blue-500 to-green-400 bg-clip-text text-transparent">&</span> Hire
             </div>
           </div>
         )}
       </div>
 
-      {/* Scrollable content */}
+      {/* User Info */}
       <nav className="flex-1 p-2 overflow-y-auto text-sm">
-        {/* User */}
         {user && (
           <div
             className={`flex items-center gap-3 p-2 cursor-pointer rounded-md hover:bg-gray-100 transition ${collapsed && "justify-center"}`}
@@ -48,12 +56,17 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
               setActiveItem(null);
               onSelect?.(null);
             }}>
-            <img src={user.photo} alt={user.name} className="w-6 h-6 rounded-full" />
-            {!collapsed && <span className="font-medium text-gray-700">{user.name}</span>}
+            <img src={user.picture} alt={user.fullName} className="w-8 h-8 rounded-full" />
+            {!collapsed && (
+              <div className="flex flex-col">
+                <span className="font-medium text-gray-700">{user.fullName}</span>
+                <span className="font-small text-xs text-gray-400">{user.role}</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Menu */}
+        {/* Menu Items */}
         {contents.map((item) => (
           <div key={item.name} className="mb-1">
             {item.submenu ? (
@@ -104,8 +117,10 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
         {footer.map((item) => (
           <button
             key={item.name}
-            onClick={item.onClick}
-            className={`flex items-center gap-3 w-full p-2 rounded-md text-gray-700 hover:bg-gray-100 transition ${collapsed && "justify-center"}`}>
+            onClick={item.name === "Logout" ? handleLogout : item.onClick}
+            className={`flex items-center gap-3 w-full p-2 rounded-md  ${item.name === "Logout" ? "text-red-500" : "text-gray-700"} hover:bg-gray-100 transition ${
+              collapsed && "justify-center"
+            }`}>
             <item.icon className="w-4 h-4" />
             {!collapsed && <span className="font-medium">{item.name}</span>}
           </button>

@@ -37,19 +37,26 @@ public class UserController {
         }
         return new ApiResponse<>(true, userService.getUsersByCompany(companyId));
     }
-//    @GetMapping
-//    public ApiResponse<List<User>> getUsers(@RequestParam String companyId) {
-//        return new ApiResponse<>(true, userService.getUsersByCompany(companyId));
-//    }
+
+    /* =========================
+       GET USER BY ID
+    ========================= */
+    @GetMapping("/{id}")
+    public ApiResponse<User> getUserById(@PathVariable String id) {
+        User user = userService.getUserById(id);
+        System.out.print("id ------ "+user);
+        if (user == null) {
+            return new ApiResponse<>(false, null);
+        }
+        return new ApiResponse<>(true, user);
+    }
 
     /* =========================
        UPDATE USER
     ========================= */
     @PutMapping("/{id}")
     public ApiResponse<User> updateUser(@PathVariable String id, @RequestBody User user) {
-
         User updated = userService.updateUser(id, user);
-        System.out.println(updated);
         return new ApiResponse<>(true, updated);
     }
 
@@ -79,10 +86,5 @@ public class UserController {
     public ApiResponse<List<User>> getDeletedUsers(@RequestParam String companyId) {
         return new ApiResponse<>(true, userService.getDeletedUsersByCompany(companyId));
     }
-
-    /* =========================
-       SEARCHING USERS
-    ========================= */
-
 
 }

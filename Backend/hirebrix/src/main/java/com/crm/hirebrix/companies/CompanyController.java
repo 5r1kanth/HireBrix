@@ -14,9 +14,25 @@ public class CompanyController {
         this.companyService = companyService;
     }
 
+    /* =========================
+       Create a new company
+    ========================== */
     @PostMapping
     public ApiResponse<Company> create(@RequestBody Company company) {
         Company created = companyService.createCompany(company);
         return new ApiResponse<>(true, created);
+    }
+
+    /* =========================
+       Get company by ID
+    ========================== */
+    @GetMapping("/{id}")
+    public ApiResponse<Company> getCompanyById(@PathVariable String id) {
+        Company company = companyService.getCompanyById(id);
+        if (company != null) {
+            return new ApiResponse<>(true, company);
+        } else {
+            return new ApiResponse<>(false, null);
+        }
     }
 }

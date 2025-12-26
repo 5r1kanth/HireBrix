@@ -6,16 +6,16 @@ import com.crm.hirebrix.invites.InviteService;
 import com.crm.hirebrix.invites.UserInvite;
 import com.crm.hirebrix.invites.UserInviteRepository;
 import com.crm.hirebrix.security.JwtService;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
-import java.time.temporal.ChronoUnit;
 
 @Service
 public class UserService {
@@ -36,7 +36,6 @@ public class UserService {
        CREATE USER
     ========================= */
     public User createUser(User user) {
-
         if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getCompanyId())) {
             throw new IllegalArgumentException("Email and Company ID are required");
         }
@@ -51,7 +50,6 @@ public class UserService {
         user.setMiddleName(NameUtils.normalize(user.getMiddleName()));
         user.setLastName(NameUtils.normalize(user.getLastName()));
         user.setRole(NameUtils.normalize(user.getRole()));
-
         user.setFullName(formFullName(user.getFirstName(), user.getMiddleName(), user.getLastName()));
 
         user.setStatus("Invited");
@@ -65,15 +63,11 @@ public class UserService {
     }
 
     public User createUserAndSendInvite(User user) {
-
-        // 1️⃣ Create the user (same as existing createUser)
         User newUser = createUser(user);
 
-        // 2️⃣ Generate secure token
         String rawToken = InviteService.generateToken();
         String hashedToken = BCrypt.hashpw(rawToken, BCrypt.gensalt());
 
-        // 3️⃣ Create UserInvite
         UserInvite invite = new UserInvite();
         invite.setCompanyId(user.getCompanyId());
         invite.setEmail(user.getEmail().toLowerCase());
@@ -82,13 +76,10 @@ public class UserService {
         invite.setTokenHash(hashedToken);
         invite.setStatus("Pending");
         invite.setSentAt(Instant.now());
-        invite.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS)); // 7-day expiry
+        invite.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
 
-        // 4️⃣ Save invite in DB
         inviteRepository.save(invite);
-
-        // 5️⃣ Send invite email
-        EmailService.sendInvite(user.getEmail(), rawToken); // implement EmailService separately
+        EmailService.sendInvite(user.getEmail(), rawToken);
 
         return newUser;
     }
@@ -100,10 +91,10 @@ public class UserService {
     }
 
     /* =========================
-       FETCH ACTIVE USERS
+       FETCH ACTIVE USERS SORTED BY CREATED DATE DESC
     ========================= */
     public List<User> getUsersByCompany(String companyId) {
-        return userRepository.findByCompanyId(companyId);
+        return userRepository.findByCompanyIdAndIsDeletedFalse(companyId, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
     /* =========================
@@ -120,9 +111,7 @@ public class UserService {
         existing.setRole(NameUtils.normalize(user.getRole()));
         existing.setStatus(user.getStatus());
         existing.setDepartment(user.getDepartment());
-
         existing.setFullName(formFullName(user.getFirstName(), user.getMiddleName(), user.getLastName()));
-
         existing.setUpdatedAt(Instant.now());
 
         return userRepository.save(existing);
@@ -158,37 +147,48 @@ public class UserService {
     }
 
     /* =========================
-       GET DELETED USERS
+       GET DELETED USERS SORTED BY CREATED DATE DESC
     ========================= */
     public List<User> getDeletedUsersByCompany(String companyId) {
-        return userRepository.findByCompanyIdAndIsDeletedTrue(companyId);
+        return userRepository.findByCompanyIdAndIsDeletedTrue(companyId, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    /* =========================
+       SEARCH USERS SORTED BY CREATED DATE DESC
+    ========================= */
     public List<User> searchUsers(String companyId, String keyword) {
         if (keyword == null || keyword.isEmpty()) {
             return getUsersByCompany(companyId);
         }
-        return userRepository
+
+        // Search returns unsorted by default; sort via repository if possible
+        List<User> results = userRepository
                 .findByCompanyIdAndIsDeletedFalseAndFullNameContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndEmailContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndRoleContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndDepartmentContainingIgnoreCase(
                         companyId, keyword,
                         companyId, keyword,
                         companyId, keyword,
                         companyId, keyword
                 );
+
+        // Sort in Java if repository doesn't support multi-field search sorting
+        results.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+
+        return results;
     }
 
+    /* =========================
+       REGISTER OR UPDATE FROM INVITE
+    ========================= */
     public User registerOrUpdateFromInvite(Map<String, Object> userInfo, String inviteToken, String inviteEmail) {
-
-        // 1️⃣ Check if invite exists and token matches
         Optional<UserInvite> inviteOpt = inviteRepository.findAll().stream()
                 .filter(inv -> BCrypt.checkpw(inviteToken, inv.getTokenHash()))
                 .findFirst();
 
-        UserInvite invite = inviteOpt.get();
-
         if (inviteOpt.isEmpty()) {
             throw new IllegalArgumentException("Invalid or expired invite token");
         }
+
+        UserInvite invite = inviteOpt.get();
 
         if (invite.getExpiresAt().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Invite has expired");
@@ -197,10 +197,9 @@ public class UserService {
         if (!invite.getEmail().equalsIgnoreCase(inviteEmail)){
             throw new IllegalArgumentException("Invite Email/Token Mismatch");
         }
-        // 2️⃣ Find existing user or create new
+
         User user = userRepository.findByEmail(inviteEmail.toLowerCase()).orElse(new User());
 
-        // Split name into first/last for better profile management
         user.setFirstName(NameUtils.normalize((String) userInfo.get("given_name")));
         user.setLastName(NameUtils.normalize((String) userInfo.get("family_name")));
         user.setFullName(NameUtils.normalize((String) userInfo.get("name")));
@@ -213,12 +212,18 @@ public class UserService {
 
         user = userRepository.save(user);
 
-        // 3️⃣ Update invite status
         invite.setStatus("Accepted");
         invite.setAcceptedAt(Instant.now());
         inviteRepository.save(invite);
 
         return user;
+    }
+
+    /* =========================
+       GET USER BY ID
+    ========================= */
+    public User getUserById(String id) {
+        return userRepository.findById(id).orElse(null);
     }
 
     /**
@@ -227,5 +232,4 @@ public class UserService {
     public String generateJwtToken(User user) {
         return jwtService.generateToken(user.getId(), user.getEmail(), user.getCompanyId(), user.getRole());
     }
-
 }

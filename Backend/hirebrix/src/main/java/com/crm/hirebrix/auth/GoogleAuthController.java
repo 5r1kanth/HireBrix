@@ -3,6 +3,7 @@ package com.crm.hirebrix.auth;
 import com.crm.hirebrix.invites.UserInvite;
 import com.crm.hirebrix.invites.UserInviteRepository;
 import com.crm.hirebrix.users.User;
+import com.crm.hirebrix.users.UserRepository;
 import com.crm.hirebrix.users.UserService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -30,6 +31,8 @@ import java.util.Optional;
 public class GoogleAuthController {
 
     private final UserService userService;
+    private final UserInviteRepository inviteRepository;
+    private final UserRepository userRepository;
 
     @Value("${google.client.id}")
     private String clientId;
@@ -39,43 +42,84 @@ public class GoogleAuthController {
     @PostMapping("/frontend-callback")
     public ResponseEntity<?> googleFrontendCallback(@RequestBody Map<String, String> payload) {
         try {
-            String accessToken = payload.get("accessToken"); // <-- changed
+            String accessToken = payload.get("accessToken");
             String inviteToken = payload.get("inviteToken");
             String inviteEmail = payload.get("inviteEmail");
 
             if (accessToken == null || accessToken.isEmpty())
                 return ResponseEntity.badRequest().body(Map.of("message", "Missing access token"));
 
-            if (inviteToken == null || inviteToken.isEmpty())
-                return ResponseEntity.badRequest().body(Map.of("message", "Missing invite token"));
-
-            if (inviteEmail == null || inviteEmail.isEmpty())
-                return ResponseEntity.badRequest().body(Map.of("message", "Missing invite Email"));
-
-
             // Fetch user info from Google
             String userInfoEndpoint = "https://www.googleapis.com/oauth2/v3/userinfo";
-            Map<String, Object> userInfo = new RestTemplate().getForObject(
-                    userInfoEndpoint + "?access_token=" + accessToken, Map.class);
-            System.out.println(userInfo);
-            if (userInfo == null || !userInfo.containsKey("email")) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("message", "Failed to fetch user info from Google"));
-            }
+            Map<String, Object> userInfo = new RestTemplate()
+                    .getForObject(userInfoEndpoint + "?access_token=" + accessToken, Map.class);
 
-            String email = (String) userInfo.get("email");
+            if (userInfo == null || !userInfo.containsKey("email"))
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("message", "Failed to fetch user info"));
+
+            String googleEmail = ((String) userInfo.get("email")).toLowerCase();
             String name = (String) userInfo.get("name");
 
+            // =============================
+            // A) PURE LOGIN FLOW (No token)
+            // =============================
+            if (inviteToken == null || inviteEmail == null) {
+
+                Optional<UserInvite> inviteOpt = inviteRepository.findByEmail(googleEmail);
+
+                if (inviteOpt.isEmpty())
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("message", "User not invited"));
+
+                UserInvite invite = inviteOpt.get();
+
+                if (!"Accepted".equalsIgnoreCase(invite.getStatus()))
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("message", "User not activated yet"));
+
+                Optional<User> userOpt = userRepository.findByEmail(googleEmail);
+
+                if (userOpt.isEmpty())
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                            .body(Map.of("message", "User account not found"));
+
+                User user = userOpt.get();
+                String jwt = userService.generateJwtToken(user);
+
+                return ResponseEntity.ok(Map.of(
+                        "token", jwt,
+//                        "email", googleEmail,
+//                        "name", name,
+                        "role", user.getRole(),
+//                        "companyId", user.getCompanyId(),
+                        "userId", user.getId()
+                ));
+
+            }
+
+            // =============================
+            // B) INVITE FLOW (WITH TOKEN)
+            // =============================
             User user = userService.registerOrUpdateFromInvite(userInfo, inviteToken, inviteEmail);
             String jwt = userService.generateJwtToken(user);
 
-            return ResponseEntity.ok(Map.of("token", jwt, "email", email, "name", name));
+            return ResponseEntity.ok(Map.of(
+                    "token", jwt,
+//                    "email", googleEmail,
+//                    "name", name,
+                    "role", user.getRole(),
+//                    "companyId", user.getCompanyId(),
+                    "userId", user.getId()
+            ));
+
 
         } catch (Exception e) {
             log.error("Google Auth Error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "Authentication failed: " + e.getMessage()));
+                    .body(Map.of("message", "Auth failed: " + e.getMessage()));
         }
     }
+
 
 }

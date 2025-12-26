@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, CheckIcon, XMarkIcon, TrashIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { rowHeight } from "@/data/adminData";
+import SearchInput from "./SearchInput";
 
 const ROLE_OPTIONS = ["Admin", "Manager", "Team Lead", "Recruiter", "Consultant"];
 const STATUS_OPTIONS = ["Active", "Inactive"];
@@ -93,13 +94,10 @@ export default function UsersTable({ title, columns, data = [], itemsPerPage = 1
       {/* Header */}
       <div className="flex items-center justify-between mb-2 px-2">
         <h2 className="text-sm font-semibold text-gray-600">{title}</h2>
-        <input
-          type="text"
+        <SearchInput
           placeholder="Search users..."
-          className="border rounded px-2 py-1 text-sm w-60 bg-gray-50"
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
+          onSearch={(value) => {
+            setSearchTerm(value);
             setPage(1);
           }}
         />

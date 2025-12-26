@@ -1,5 +1,6 @@
 package com.crm.hirebrix.users;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 import java.util.Optional;
@@ -9,11 +10,17 @@ public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByEmail(String email);
     Optional<User> findByEmailAndCompanyIdAndIsDeletedFalse(String email, String companyId);
 
-    List<User> findByCompanyIdAndIsDeletedFalse(String companyId);
-    List<User> findByCompanyIdAndRoleAndIsDeletedFalse(String companyId, String role);
+    // Active users, sorted by createdAt descending
+    default List<User> findByCompanyIdAndIsDeletedFalseOrderByCreatedAtDesc(String companyId) {
+        return findByCompanyIdAndIsDeletedFalse(companyId, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
 
-    // Soft deleted users
-    List<User> findByCompanyIdAndIsDeletedTrue(String companyId);
+    // Soft deleted users, sorted by createdAt descending
+    default List<User> findByCompanyIdAndIsDeletedTrueOrderByCreatedAtDesc(String companyId) {
+        return findByCompanyIdAndIsDeletedTrue(companyId, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    List<User> findByCompanyIdAndRoleAndIsDeletedFalse(String companyId, String role);
 
     // Search in multiple fields safely under same company
     List<User> findByCompanyIdAndIsDeletedFalseAndFullNameContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndEmailContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndRoleContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndDepartmentContainingIgnoreCase(
@@ -24,4 +31,8 @@ public interface UserRepository extends MongoRepository<User, String> {
     );
 
     List<User> findByCompanyId(String companyId);
+
+    // Methods that support Sort parameter
+    List<User> findByCompanyIdAndIsDeletedFalse(String companyId, Sort sort);
+    List<User> findByCompanyIdAndIsDeletedTrue(String companyId, Sort sort);
 }

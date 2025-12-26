@@ -37,6 +37,19 @@ export const getDeletedUsersByCompany = async (companyId) => {
 };
 
 /* =========================
+   Get user by ID
+========================= */
+export const getUserById = async (userId) => {
+    try {
+        const user = await apiRequest(`/users/${userId}`);
+        return user; // apiRequest already returns parsed JSON
+    } catch (err) {
+        console.error("Failed to fetch user by ID:", err);
+        return null;
+    }
+};
+
+/* =========================
    Soft delete a user
 ========================= */
 export const softDeleteUser = (userId) => {

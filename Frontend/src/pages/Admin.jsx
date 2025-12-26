@@ -5,10 +5,12 @@ import UsersTable from "@/components/Dashboard/UsersTable";
 import DashboardMetrics from "@/components/Dashboard/DashboardMetrics";
 import AddUserForm from "@/components/Dashboard/AddUserForm";
 
-import { adminInfo, sidebarContents, sidebarFooter, usersColumns } from "@/data/adminData";
-import { sidebarHeader, consultancyName, COMPANY_ID } from "@/data/consultancyData";
+import { sidebarContents, sidebarFooter, usersColumns } from "@/data/adminData";
+import { sidebarHeader } from "@/data/consultancyData";
 
 import { getUsersByCompany, updateUser, softDeleteUser, restoreUser } from "@/api/users.api";
+
+import { fetchCurrentUser, logout } from "@/api/auth.api";
 
 export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -18,12 +20,25 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  });
+
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
+  // Fetch current user details from backend
+  const loadUser = async () => {
+    const freshUser = await fetchCurrentUser();
+    if (!freshUser) logout();
+    else setUser(freshUser);
+  };
+
+  // Fetch all users for dashboard
   const fetchAllUsers = async () => {
     try {
       setLoading(true);
-      const users = await getUsersByCompany(COMPANY_ID); // fetch all users
+      const users = await getUsersByCompany(user.companyId);
       setAllUsers(Array.isArray(users) ? users : []);
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -34,13 +49,13 @@ export default function Admin() {
   };
 
   useEffect(() => {
+    loadUser();
     fetchAllUsers();
   }, []);
 
-  // Filter active users
   const activeUsers = useMemo(() => allUsers.filter((u) => !u.deleted), [allUsers]);
+  const deletedUsers = useMemo(() => allUsers.filter((u) => u.deleted), [allUsers]);
 
-  // Count metrics for roles (only active users)
   const roleCounts = useMemo(
     () => ({
       Active: activeUsers.length,
@@ -49,14 +64,11 @@ export default function Admin() {
       "Team Lead": activeUsers.filter((u) => u.role === "Team Lead").length,
       Recruiter: activeUsers.filter((u) => u.role === "Recruiter").length,
       Consultant: activeUsers.filter((u) => u.role === "Consultant").length,
-      Deleted: allUsers.filter((u) => u.deleted).length,
+      Deleted: deletedUsers.length,
     }),
-    [activeUsers]
+    [activeUsers, deletedUsers]
   );
 
-  const deletedUsers = useMemo(() => allUsers.filter((u) => u.deleted), [allUsers]);
-
-  // Users to display in table
   const displayedUsers = useMemo(() => {
     if (showDeleted) return deletedUsers;
     if (!activeRole || activeRole === "Active") return activeUsers;
@@ -112,7 +124,7 @@ export default function Admin() {
     <div className="flex p-2 gap-1 bg-gray-100 h-screen">
       <Sidebar
         header={sidebarHeader}
-        user={adminInfo}
+        user={user}
         contents={sidebarContents}
         footer={sidebarFooter}
         collapsed={!sidebarOpen}
@@ -144,7 +156,7 @@ export default function Admin() {
       />
 
       <div className="flex flex-col flex-1 gap-1">
-        <Topbar title={consultancyName} user={adminInfo} onMenuClick={toggleSidebar} />
+        <Topbar user={{ ...user, onLogout: logout }} onMenuClick={toggleSidebar} />
 
         <div className="flex-1 rounded-md">
           {addRole ? (
@@ -160,10 +172,10 @@ export default function Admin() {
                     setActiveRole(null);
                   } else if (role === "Active") {
                     setShowDeleted(false);
-                    setActiveRole(null); // important! null for all active users
+                    setActiveRole(null);
                   } else {
                     setShowDeleted(false);
-                    setActiveRole(role); // Admin, Manager, etc.
+                    setActiveRole(role);
                   }
                 }}
                 deletedCount={deletedUsers.length}
@@ -172,7 +184,7 @@ export default function Admin() {
               <UsersTable
                 title={activeRole ? `${activeRole}s` : showDeleted ? "Deleted Users" : "All Users"}
                 columns={usersColumns}
-                data={allUsers} // ✅ IMPORTANT
+                data={displayedUsers}
                 itemsPerPage={10}
                 onSave={handleUpdateUser}
                 onDelete={handleDeleteUser}

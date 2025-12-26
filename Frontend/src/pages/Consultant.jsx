@@ -1,17 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import Topbar from "@/components/Dashboard/Topbar";
 
-import {
-  skillsData,
-  experienceData,
-  upcomingInterviewsData,
-  recentSubmissionsData,
-  interviewFunnelData,
-  sidebarContents,
-  sidebarFooter,
-  consultantInfo,
-} from "@/data/consultantData";
+import { skillsData, experienceData, upcomingInterviewsData, recentSubmissionsData, interviewFunnelData, sidebarContents, sidebarFooter } from "@/data/consultantData";
 
 import Skillset from "@/components/Dashboard/Skillset";
 import Experience from "@/components/Dashboard/Experience";
@@ -20,6 +11,7 @@ import Overview from "@/components/Dashboard/Overview";
 import RecentSubmissions from "@/components/Dashboard/RecentSubmissions";
 import InterviewFunnel from "@/components/Dashboard/InterviewFunnel";
 import { consultancyName, sidebarHeader } from "@/data/consultancyData";
+import { fetchCurrentUser, logout } from "@/api/auth.api";
 
 export default function Consultant() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -27,11 +19,26 @@ export default function Consultant() {
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
+  const [user, setUser] = useState(() => {
+    const stored = localStorage.getItem("user");
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  const loadUser = async () => {
+    const freshUser = await fetchCurrentUser();
+    if (!freshUser) logout();
+    else setUser(freshUser);
+  };
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
   return (
     <div className="flex p-2 gap-1 bg-gray-100 h-screen">
       <Sidebar
         header={sidebarHeader}
-        user={consultantInfo}
+        user={user}
         contents={sidebarContents}
         footer={sidebarFooter}
         collapsed={!sidebarOpen}
@@ -40,11 +47,7 @@ export default function Consultant() {
       />
 
       <div className="flex flex-col flex-1 gap-1">
-        <Topbar
-          title={consultancyName}
-          user={consultantInfo}
-          onMenuClick={toggleSidebar}
-        />
+        <Topbar title={consultancyName} user={{ ...user, onLogout: logout }} onMenuClick={toggleSidebar} />
 
         <div className="flex-1 flex gap-1 overflow-auto rounded-md">
           {/* LEFT SECTION */}

@@ -1,16 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import ThemeToggle from "../Theme/ThemeToggle";
+import { getUserById } from "@/api/users.api";
 
 export default function Login() {
   const [inviteToken, setInviteToken] = useState(null);
   const [inviteEmail, setInviteEmail] = useState(null);
   const [error, setError] = useState("");
   const [isDesktop, setIsDesktop] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  /** =============================
-   * Detect Desktop
-   ============================= */
+  // Role mapping to normalize backend roles
+  const roleMap = {
+    Admin: "Admin",
+    Manager: "Manager",
+    "Team Lead": "Team Lead",
+    Recruiter: "Recruiter",
+    HRManager: "HR Manager", // Normalize
+    Consultant: "Consultant",
+  };
+
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
     const handleResize = () => setIsDesktop(mediaQuery.matches);
@@ -19,9 +28,6 @@ export default function Login() {
     return () => mediaQuery.removeEventListener("change", handleResize);
   }, []);
 
-  /** =============================
-   * Read Invite Token & Email
-   ============================= */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const email = params.get("email");
@@ -32,39 +38,25 @@ export default function Login() {
       setInviteToken(token);
       sessionStorage.setItem("invite_token", token);
       sessionStorage.setItem("invite_email", email);
-    } else {
-      setError("This application is invite-only. Please use your invite link.");
     }
   }, []);
 
-  /** =============================
-   * Load Google Identity Services script
-   ============================= */
   const loadGoogleScript = () =>
     new Promise((resolve, reject) => {
       if (window.google?.accounts?.oauth2) return resolve();
-
-      const existingScript = document.getElementById("google-oauth");
-      if (!existingScript) {
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.id = "google-oauth";
-        script.async = true;
-        script.defer = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error("Google OAuth script failed to load"));
-        document.body.appendChild(script);
-      } else {
-        resolve();
-      }
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.id = "google-oauth";
+      script.onload = resolve;
+      script.onerror = () => reject(new Error("Google OAuth failed to load"));
+      document.body.appendChild(script);
     });
 
-  /** =============================
-   * Initialize Google OAuth popup
-   ============================= */
   const initGooglePopup = (token, email) => {
     if (!window.google?.accounts?.oauth2) {
-      setError("Google OAuth not loaded. Please try again.");
+      setError("Google auth failed to initialize.");
       return;
     }
 
@@ -74,60 +66,87 @@ export default function Login() {
       client_id: clientId,
       scope: "email profile openid",
       callback: async (tokenResponse) => {
+        setLoading(true);
         try {
           const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/google/frontend-callback`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               accessToken: tokenResponse.access_token,
-              inviteToken: token,
-              inviteEmail: email,
+              inviteToken: token ?? null,
+              inviteEmail: email ?? null,
             }),
           });
-          console.log(email);
+
           const data = await res.json();
 
-          if (res.ok) {
-            if (data.email.toLowerCase() !== inviteEmail.toLowerCase()) {
-              setError("You must sign in with the email you were invited with.");
-              return;
-            }
-
-            localStorage.setItem("token", data.token);
-            window.location.href = "/consultant"; // Landing page after successful login
-          } else {
-            setError(data.message || "Google login failed.");
+          if (!res.ok) {
+            setError(data.message || "Authentication failed.");
+            return;
           }
+
+          // Store essential info
+          localStorage.setItem("accessToken", data.token);
+          localStorage.setItem("userId", data.userId);
+
+          // Normalize role
+          const normalizedRole = roleMap[data.role] || data.role;
+          localStorage.setItem("role", normalizedRole);
+
+          // Fetch user details
+          const userDetails = await getUserById(data.userId);
+          if (!userDetails) {
+            setError("Failed to fetch user details.");
+            return;
+          }
+          setLoading(false);
+          localStorage.setItem("user", JSON.stringify(userDetails));
+
+          // Redirect based on role
+          const routeMap = {
+            Admin: "/admin",
+            Manager: "/manager",
+            "Team Lead": "/teamlead",
+            Recruiter: "/recruiter",
+            "HR Manager": "/hrmanager",
+            Consultant: "/consultant",
+          };
+
+          console.log(localStorage);
+
+          window.location.href = routeMap[normalizedRole] || "/login";
         } catch (err) {
-          setError(err.message || "Something went wrong during Google login.");
+          console.log(err);
+          setLoading(false);
+          setError("Something went wrong. Try again.");
         }
       },
     });
 
-    // Open Google OAuth popup
     oauth2Client.requestAccessToken();
   };
 
-  /** =============================
-   * Handle Google Login button click
-   ============================= */
   const handleGoogleLogin = async () => {
-    if (!inviteToken || !inviteEmail) {
-      setError("Missing invite token or email. Please use your invite link.");
-      return;
-    }
-
+    setError("");
     try {
-      await loadGoogleScript(); // Load GIS script
+      await loadGoogleScript();
       initGooglePopup(inviteToken, inviteEmail);
     } catch (err) {
-      setError(err.message);
+      setError("Google login failed. Try again.");
     }
   };
 
-  /** =============================
-   * Desktop check
-   ============================= */
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white/90">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-16 h-16 border-4 border-gray-300 border-t-[var(--electric-blue)] rounded-full animate-spin"></div>
+          <p className="text-gray-700 text-md font-medium">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isDesktop) {
     return (
       <div className="min-h-screen flex items-center justify-center hero-gradient px-6 text-center">
@@ -143,18 +162,13 @@ export default function Login() {
     );
   }
 
-  /** =============================
-   * Render Login Page
-   ============================= */
   return (
     <div className="min-h-screen flex flex-col items-center justify-center hero-gradient px-4 py-12 sm:py-20 relative">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
 
-      <h1
-        className="w-full text-center text-5xl sm:text-6xl font-extrabold tracking-tight mb-6 
-                     bg-gradient-to-r from-[var(--electric-blue)] to-[var(--electric-blue)] text-transparent bg-clip-text">
+      <h1 className="w-full text-center text-5xl sm:text-6xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-[var(--electric-blue)] to-[var(--electric-blue)] text-transparent bg-clip-text">
         HireBrix
       </h1>
 
@@ -166,14 +180,14 @@ export default function Login() {
 
       <button
         onClick={handleGoogleLogin}
-        className="group flex items-center justify-center gap-2.5 px-6 py-3 bg-color rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.25)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.35)] transition-shadow border border-gray-300">
+        className="group flex items-center justify-center gap-2.5 px-6 py-3 bg-white rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.25)] hover:shadow-[0_8px_25px_rgba(0,0,0,0.35)] transition-shadow border border-gray-300">
         <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4" />
         <span className="text-almost-black font-medium">Continue with Google</span>
         <ArrowRightIcon className="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" />
       </button>
 
       <p className="mt-6 text-xs text-gray-500 max-w-md text-center">
-        By clicking <span className="font-medium">Continue</span>, you agree to our{" "}
+        By continuing, you agree to our{" "}
         <a href="#" className="underline hover:text-almost-black">
           Terms
         </a>{" "}
