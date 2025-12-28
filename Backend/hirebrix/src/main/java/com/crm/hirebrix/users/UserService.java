@@ -94,7 +94,7 @@ public class UserService {
        FETCH ACTIVE USERS SORTED BY CREATED DATE DESC
     ========================= */
     public List<User> getUsersByCompany(String companyId) {
-        return userRepository.findByCompanyIdAndIsDeletedFalse(companyId, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return userRepository.findByCompanyIdAndIsDeletedFalse(companyId, Sort.by(Sort.Direction.DESC, "updatedAt"));
     }
 
     /* =========================

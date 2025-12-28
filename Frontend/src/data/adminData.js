@@ -5,17 +5,6 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import AdminPhoto from "@/assets/userProfile.svg";
-
-/* =========================
-   ADMIN INFO (Logged-in Admin)
-========================= */
-export const adminInfo = {
-  name: "Super Admin",
-  photo: AdminPhoto,
-  hasNotifications: true,
-  onLogout: () => console.log("Logout clicked"),
-};
 
 /* =========================
    SIDEBAR CONTENTS
@@ -54,12 +43,13 @@ export const sidebarFooter = [
   { name: "Settings", icon: Cog6ToothIcon },
   {
     name: "Logout",
-    icon: ArrowRightOnRectangleIcon,
-    onClick: adminInfo.onLogout,
+    icon: ArrowRightOnRectangleIcon
   },
 ];
 
-// Table columns
+/* =========================
+   Table columns
+========================= */
 export const usersColumns = [
   { label: "First", accessor: "firstName", width: "140px" },
   { label: "Last", accessor: "lastName", width: "120px" },
@@ -76,6 +66,24 @@ export const ROLE_CONFIG = {
   "Team Lead": "Add Team Lead",
   Recruiter: "Add Recruiter",
   Consultant: "Add Consultant",
+};
+
+export const roleMap = {
+  Admin: "Admin",
+  Manager: "Manager",
+  "Team Lead": "Team Lead",
+  Recruiter: "Recruiter",
+  HRManager: "HR Manager",
+  Consultant: "Consultant",
+};
+
+export const routeMap = {
+  Admin: "/admin",
+  Manager: "/manager",
+  "Team Lead": "/teamlead",
+  Recruiter: "/recruiter",
+  "HR Manager": "/hrmanager",
+  Consultant: "/consultant",
 };
 
 export const rowHeight = 40;

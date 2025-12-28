@@ -17,9 +17,11 @@ export async function fetchCurrentUser() {
     }
 }
 
-export function logout() {
+export const logout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userId");
     localStorage.removeItem("user");
+    localStorage.removeItem("role");
+
     window.location.href = "/login";
-}
+};

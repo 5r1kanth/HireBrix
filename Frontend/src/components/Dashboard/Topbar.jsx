@@ -5,14 +5,11 @@ import { getCompanyById } from "@/api/company.api";
 
 export default function Topbar({ onMenuClick, user }) {
   const [open, setOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState(user);
   const [company, setCompany] = useState(null);
   const dropdownRef = useRef();
 
   // Update currentUser whenever user prop changes
   useEffect(() => {
-    setCurrentUser(user);
-
     if (user?.companyId) {
       getCompanyById(user.companyId)
         .then((data) => setCompany(data))
@@ -55,15 +52,15 @@ export default function Topbar({ onMenuClick, user }) {
         {/* Notifications */}
         <button className="p-1.5 rounded-md hover:bg-gray-100 transition relative">
           <BellIcon className="w-5 h-5 text-gray-600" />
-          {currentUser?.hasNotifications && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
+          {user?.hasNotifications && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
         </button>
 
         {/* User Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-2 p-1.5 rounded-md hover:bg-gray-100 transition">
-            <img src={currentUser?.picture} alt={currentUser?.fullName} className="w-7 h-7 rounded-full" />
+            <img src={user?.picture} alt={user?.fullName} className="w-7 h-7 rounded-full" />
             <div className="hidden sm:flex flex-col text-left">
-              <span className="text-sm font-medium text-gray-700">{currentUser?.fullName}</span>
+              <span className="text-sm font-medium text-gray-700">{user?.fullName}</span>
             </div>
             <ChevronDownIcon className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
           </button>

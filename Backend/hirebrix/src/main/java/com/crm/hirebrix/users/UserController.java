@@ -44,7 +44,6 @@ public class UserController {
     @GetMapping("/{id}")
     public ApiResponse<User> getUserById(@PathVariable String id) {
         User user = userService.getUserById(id);
-        System.out.print("id ------ "+user);
         if (user == null) {
             return new ApiResponse<>(false, null);
         }

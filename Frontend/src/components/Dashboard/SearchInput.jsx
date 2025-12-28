@@ -20,7 +20,14 @@ export default function SearchInput({ placeholder = "Search...", onSearch }) {
 
   return (
     <div className="relative w-60">
-      <input type="text" className="border rounded pr-8 pl-2 py-1 text-sm w-full bg-gray-50" placeholder={placeholder} value={value} onChange={(e) => setValue(e.target.value)} />
+      <input
+        name="User Search"
+        type="text"
+        className="border rounded pr-8 pl-2 py-1 text-sm w-full bg-gray-50"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
 
       {value && (
         <button

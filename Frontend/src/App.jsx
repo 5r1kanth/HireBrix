@@ -7,49 +7,110 @@ import TeamLead from "./pages/TeamLead";
 import Manager from "./pages/Manager";
 import HRManager from "./pages/HRManager";
 import Admin from "./pages/Admin";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
+import DesktopGuard from "./components/Guards/DesktopGuard";
+import { AuthProvider } from "./context/AuthContext";
 
 export default function App() {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
+        <Route
+          path="/login"
+          element={
+            <DesktopGuard>
+              <Login />
+            </DesktopGuard>
+          }
+        />
 
-      {/* Protected Routes with Role-based Access */}
+        {/* Protected Routes with Role-based Access */}
 
-      {/* Admin */}
-      <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
-        <Route path="/admin" element={<Admin />} />
-      </Route>
+        {/* Admin */}
+        <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+          <Route
+            path="/admin"
+            element={
+              <DesktopGuard>
+                <Admin />
+              </DesktopGuard>
+            }
+          />
+        </Route>
 
-      {/* Manager */}
-      <Route element={<ProtectedRoute allowedRoles={["Manager"]} />}>
-        <Route path="/manager" element={<Manager />} />
-      </Route>
+        {/* Manager */}
+        <Route element={<ProtectedRoute allowedRoles={["Manager"]} />}>
+          <Route
+            path="/manager"
+            element={
+              <DesktopGuard>
+                <Manager />
+              </DesktopGuard>
+            }
+          />
+        </Route>
 
-      {/* Team Lead */}
-      <Route element={<ProtectedRoute allowedRoles={["Team Lead"]} />}>
-        <Route path="/teamlead" element={<TeamLead />} />
-      </Route>
+        {/* Team Lead */}
+        <Route element={<ProtectedRoute allowedRoles={["Team Lead"]} />}>
+          <Route
+            path="/teamlead"
+            element={
+              <DesktopGuard>
+                <TeamLead />
+              </DesktopGuard>
+            }
+          />
+        </Route>
 
-      {/* Recruiter */}
-      <Route element={<ProtectedRoute allowedRoles={["Recruiter"]} />}>
-        <Route path="/recruiter" element={<Recruiter />} />
-      </Route>
+        {/* Recruiter */}
+        <Route element={<ProtectedRoute allowedRoles={["Recruiter"]} />}>
+          <Route
+            path="/recruiter"
+            element={
+              <DesktopGuard>
+                <Recruiter />
+              </DesktopGuard>
+            }
+          />
+        </Route>
 
-      {/* Consultant */}
-      <Route element={<ProtectedRoute allowedRoles={["Consultant"]} />}>
-        <Route path="/consultant" element={<Consultant />} />
-      </Route>
+        {/* Consultant */}
+        <Route element={<ProtectedRoute allowedRoles={["Consultant"]} />}>
+          <Route
+            path="/consultant"
+            element={
+              <DesktopGuard>
+                <Consultant />
+              </DesktopGuard>
+            }
+          />
+        </Route>
 
-      {/* HR Manager */}
-      <Route element={<ProtectedRoute allowedRoles={["HR Manager"]} />}>
-        <Route path="/hrmanager" element={<HRManager />} />
-      </Route>
+        {/* HR Manager */}
+        <Route element={<ProtectedRoute allowedRoles={["HR Manager"]} />}>
+          <Route
+            path="/hrmanager"
+            element={
+              <DesktopGuard>
+                <HRManager />
+              </DesktopGuard>
+            }
+          />
+        </Route>
 
-      {/* Fallback Route (optional) */}
-      <Route path="*" element={<Login />} />
-    </Routes>
+        {/* Fallback Route */}
+        <Route
+          path="*"
+          element={
+            <DesktopGuard>
+              <Login />
+            </DesktopGuard>
+          }
+        />
+      </Routes>
+    </AuthProvider>
   );
 }

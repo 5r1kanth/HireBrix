@@ -1,59 +1,28 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { getUserById } from "@/api/users.api";
+import { useAuth } from "@/context/AuthContext";
+import { roleMap } from "@/data/adminData";
 
 export default function ProtectedRoute({ allowedRoles }) {
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const userId = localStorage.getItem("userId");
+  // 1️⃣ Show loading while AuthProvider is fetching user data
+  if (loading) {
+    return <div className="text-center p-4">Loading user information...</div>;
+  }
 
-    if (!token || !userId) {
-      setAuthorized(false);
-      setLoading(false);
-      return;
-    }
+  // 2️⃣ If no user is logged in, redirect to login page
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
-    async function fetchUser() {
-      try {
-        const user = await getUserById(userId);
+  // 3️⃣ Normalize role names to match allowedRoles
+  const normalizedRole = roleMap[user.role] || user.role;
 
-        if (user) {
-          localStorage.setItem("user", JSON.stringify(user));
+  // 4️⃣ If allowedRoles is provided, check if the user has permission
+  if (allowedRoles && !allowedRoles.includes(normalizedRole)) {
+    return <Navigate to="/login" replace />;
+  }
 
-          // normalize roles if needed
-          const roleMap = {
-            Admin: "Admin",
-            Manager: "Manager",
-            "Team Lead": "Team Lead",
-            Recruiter: "Recruiter",
-            HRManager: "HR Manager",
-            Consultant: "Consultant",
-          };
-          const normalizedRole = roleMap[user.role] || user.role;
-
-          if (!allowedRoles || allowedRoles.includes(normalizedRole)) {
-            setAuthorized(true);
-          } else {
-            setAuthorized(false);
-          }
-        } else {
-          setAuthorized(false);
-        }
-      } catch (err) {
-        console.error("Auth fetch failed", err);
-        setAuthorized(false);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchUser();
-  }, [allowedRoles]);
-
-  if (loading) return <div>Loading...</div>;
-
-  return authorized ? <Outlet /> : <Navigate to="/login" replace />;
+  // 5️⃣ If everything is OK, render the nested route
+  return <Outlet />;
 }

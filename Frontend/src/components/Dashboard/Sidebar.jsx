@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Sidebar({ header, user, contents, footer, collapsed, onMenuClick, onSelect }) {
   const [openDropdowns, setOpenDropdowns] = useState([]);
   const [activeItem, setActiveItem] = useState(null);
+
+  const { logout } = useAuth();
 
   const toggleDropdown = (name) => setOpenDropdowns((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
 
@@ -14,17 +17,6 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
     }
     setActiveItem(item.name);
     onSelect?.(item);
-  };
-
-  const handleLogout = () => {
-    // Clear all user session info
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
-
-    // Redirect to login
-    window.location.href = "/login";
   };
 
   return (
@@ -117,7 +109,7 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
         {footer.map((item) => (
           <button
             key={item.name}
-            onClick={item.name === "Logout" ? handleLogout : item.onClick}
+            onClick={item.name === "Logout" ? logout : item.onClick}
             className={`flex items-center gap-3 w-full p-2 rounded-md  ${item.name === "Logout" ? "text-red-500" : "text-gray-700"} hover:bg-gray-100 transition ${
               collapsed && "justify-center"
             }`}>

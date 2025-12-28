@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import Topbar from "@/components/Dashboard/Topbar";
 import UsersTable from "@/components/Dashboard/UsersTable";
@@ -8,37 +8,34 @@ import AddUserForm from "@/components/Dashboard/AddUserForm";
 import { sidebarContents, sidebarFooter, usersColumns } from "@/data/adminData";
 import { sidebarHeader } from "@/data/consultancyData";
 
-import { getUsersByCompany, updateUser, softDeleteUser, restoreUser } from "@/api/users.api";
-
-import { fetchCurrentUser, logout } from "@/api/auth.api";
+import { getUsersByCompany, getDeletedUsersByCompany, updateUser, softDeleteUser, restoreUser } from "@/api/users.api";
+// import { logout } from "@/api/auth.api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeRole, setActiveRole] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
-  const [allUsers, setAllUsers] = useState([]); // all users including deleted
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
-  });
+  const { user, companyConfig, loading: authLoading, logout } = useAuth();
+
+  console.log("Config is ", companyConfig);
+
+  if (authLoading) return <div className="text-center p-4">Loading...</div>;
+  if (!user) return <div className="text-center p-4">Not logged in</div>;
+  if (!companyConfig) return <div className="text-center p-4">Loading company config...</div>;
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
-  // Fetch current user details from backend
-  const loadUser = async () => {
-    const freshUser = await fetchCurrentUser();
-    if (!freshUser) logout();
-    else setUser(freshUser);
-  };
-
-  // Fetch all users for dashboard
   const fetchAllUsers = async () => {
     try {
       setLoading(true);
-      const users = await getUsersByCompany(user.companyId);
+      const activeUsers = await getUsersByCompany(user.companyId);
+      const deletedUsers = await getDeletedUsersByCompany(user.companyId);
+      const users = activeUsers.concat(deletedUsers);
       setAllUsers(Array.isArray(users) ? users : []);
     } catch (err) {
       console.error("Failed to fetch users", err);
@@ -49,9 +46,8 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    loadUser();
     fetchAllUsers();
-  }, []);
+  }, [user]);
 
   const activeUsers = useMemo(() => allUsers.filter((u) => !u.deleted), [allUsers]);
   const deletedUsers = useMemo(() => allUsers.filter((u) => u.deleted), [allUsers]);
@@ -120,6 +116,34 @@ export default function Admin() {
     }
   };
 
+  const handleSidebarSelect = useCallback((item) => {
+    if (!item) {
+      setActiveRole(null);
+      setSelectedSection(null);
+      setShowDeleted(false);
+      return;
+    }
+
+    if (item.name.startsWith("All ")) {
+      const role = item.name.replace("All ", "").slice(0, -1);
+      setActiveRole(role);
+      setSelectedSection(null);
+      setShowDeleted(false);
+      return;
+    }
+
+    if (item.name.startsWith("Add ")) {
+      setSelectedSection(item.name);
+      setActiveRole(null);
+      setShowDeleted(false);
+      return;
+    }
+
+    setActiveRole(null);
+    setSelectedSection(null);
+    setShowDeleted(false);
+  }, []);
+
   return (
     <div className="flex p-2 gap-1 bg-gray-100 h-screen">
       <Sidebar
@@ -129,34 +153,11 @@ export default function Admin() {
         footer={sidebarFooter}
         collapsed={!sidebarOpen}
         onMenuClick={toggleSidebar}
-        onSelect={(item) => {
-          if (!item) {
-            setActiveRole(null);
-            setSelectedSection(null);
-            setShowDeleted(false);
-            return;
-          }
-          if (item.name.startsWith("All ")) {
-            const role = item.name.replace("All ", "").slice(0, -1);
-            setActiveRole(role);
-            setSelectedSection(null);
-            setShowDeleted(false);
-            return;
-          }
-          if (item.name.startsWith("Add ")) {
-            setSelectedSection(item.name);
-            setActiveRole(null);
-            setShowDeleted(false);
-            return;
-          }
-          setActiveRole(null);
-          setSelectedSection(null);
-          setShowDeleted(false);
-        }}
+        onSelect={handleSidebarSelect}
       />
 
       <div className="flex flex-col flex-1 gap-1">
-        <Topbar user={{ ...user, onLogout: logout }} onMenuClick={toggleSidebar} />
+        <Topbar user={user} onLogout={logout} onMenuClick={toggleSidebar} />
 
         <div className="flex-1 rounded-md">
           {addRole ? (

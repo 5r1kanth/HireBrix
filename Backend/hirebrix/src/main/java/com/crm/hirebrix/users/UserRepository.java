@@ -20,6 +20,20 @@ public interface UserRepository extends MongoRepository<User, String> {
         return findByCompanyIdAndIsDeletedTrue(companyId, Sort.by(Sort.Direction.DESC, "createdAt"));
     }
 
+    // ---------------------------
+    // New methods: sorted by updatedAt
+    // ---------------------------
+
+    // Active users sorted by updatedAt descending
+    default List<User> findByCompanyIdAndIsDeletedFalseOrderByUpdatedAtDesc(String companyId) {
+        return findByCompanyIdAndIsDeletedFalse(companyId, Sort.by(Sort.Direction.DESC, "updatedAt"));
+    }
+
+    // Deleted users sorted by updatedAt descending
+    default List<User> findByCompanyIdAndIsDeletedTrueOrderByUpdatedAtDesc(String companyId) {
+        return findByCompanyIdAndIsDeletedTrue(companyId, Sort.by(Sort.Direction.DESC, "updatedAt"));
+    }
+
     List<User> findByCompanyIdAndRoleAndIsDeletedFalse(String companyId, String role);
 
     // Search in multiple fields safely under same company
@@ -35,4 +49,5 @@ public interface UserRepository extends MongoRepository<User, String> {
     // Methods that support Sort parameter
     List<User> findByCompanyIdAndIsDeletedFalse(String companyId, Sort sort);
     List<User> findByCompanyIdAndIsDeletedTrue(String companyId, Sort sort);
+
 }

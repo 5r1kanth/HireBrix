@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import ThemeToggle from "../Theme/ThemeToggle";
 import { getUserById } from "@/api/users.api";
+import { roleMap, routeMap } from "@/data/adminData";
 
 export default function Login() {
   const [inviteToken, setInviteToken] = useState(null);
@@ -9,16 +10,6 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isDesktop, setIsDesktop] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Role mapping to normalize backend roles
-  const roleMap = {
-    Admin: "Admin",
-    Manager: "Manager",
-    "Team Lead": "Team Lead",
-    Recruiter: "Recruiter",
-    HRManager: "HR Manager", // Normalize
-    Consultant: "Consultant",
-  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -101,16 +92,6 @@ export default function Login() {
           }
           setLoading(false);
           localStorage.setItem("user", JSON.stringify(userDetails));
-
-          // Redirect based on role
-          const routeMap = {
-            Admin: "/admin",
-            Manager: "/manager",
-            "Team Lead": "/teamlead",
-            Recruiter: "/recruiter",
-            "HR Manager": "/hrmanager",
-            Consultant: "/consultant",
-          };
 
           console.log(localStorage);
 
