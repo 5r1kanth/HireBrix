@@ -8,7 +8,7 @@ import AddUserForm from "@/components/Dashboard/AddUserForm";
 import { sidebarContents, sidebarFooter, usersColumns } from "@/data/adminData";
 import { sidebarHeader } from "@/data/consultancyData";
 
-import { getUsersByCompany, getDeletedUsersByCompany, updateUser, softDeleteUser, restoreUser } from "@/api/users.api";
+import { getUsersByCompany, getDeletedUsersByCompany, updateUser, softDeleteUser, restoreUser, resendInvite } from "@/api/users.api";
 // import { logout } from "@/api/auth.api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -21,8 +21,6 @@ export default function Admin() {
   const [showDeleted, setShowDeleted] = useState(false);
 
   const { user, companyConfig, loading: authLoading, logout } = useAuth();
-
-  console.log("Config is ", companyConfig);
 
   if (authLoading) return <div className="text-center p-4">Loading...</div>;
   if (!user) return <div className="text-center p-4">Not logged in</div>;
@@ -95,10 +93,11 @@ export default function Admin() {
   const handleDeleteUser = async (user) => {
     try {
       setLoading(true);
-      await softDeleteUser(user.id);
+      const result = await softDeleteUser(user.id);
       fetchAllUsers();
-    } catch (err) {
-      console.error("Failed to delete user", err);
+      return { success: true, message: result.message || "Deleted successfully!" };
+    } catch (error) {
+      return { success: false, message: error?.message || "Failed to delete invite" };
     } finally {
       setLoading(false);
     }
@@ -107,12 +106,23 @@ export default function Admin() {
   const handleRestoreUser = async (user) => {
     try {
       setLoading(true);
-      await restoreUser(user.id);
+      const result = await restoreUser(user.id);
       fetchAllUsers();
-    } catch (err) {
-      console.error("Failed to restore user", err);
+      return { success: true, message: result.message || "Restore successfully!" };
+    } catch (error) {
+      return { success: false, message: error?.message || "Failed to restore invite" };
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendInvite = async (userId) => {
+    try {
+      const result = await resendInvite(userId);
+      await fetchAllUsers();
+      return { success: true, message: result.message || "Invite resent successfully!" };
+    } catch (error) {
+      return { success: false, message: error?.message || "Failed to resend invite" };
     }
   };
 
@@ -159,7 +169,7 @@ export default function Admin() {
       <div className="flex flex-col flex-1 gap-1">
         <Topbar user={user} onLogout={logout} onMenuClick={toggleSidebar} />
 
-        <div className="flex-1 rounded-md">
+        <div className="flex-1 rounded-md gap-1 flex flex-col items-center justify-center">
           {addRole ? (
             <AddUserForm role={addRole} onAddUser={handleAddUser} />
           ) : (
@@ -190,6 +200,7 @@ export default function Admin() {
                 onSave={handleUpdateUser}
                 onDelete={handleDeleteUser}
                 onRestore={handleRestoreUser}
+                onResendInvite={handleResendInvite}
                 showDeleted={showDeleted}
                 activeRole={activeRole}
                 loading={loading}

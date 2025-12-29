@@ -1,13 +1,10 @@
 package com.crm.hirebrix.auth;
 
-import com.crm.hirebrix.invites.UserInvite;
-import com.crm.hirebrix.invites.UserInviteRepository;
+import com.crm.hirebrix.invites.Invite;
+import com.crm.hirebrix.invites.InviteRepository;
 import com.crm.hirebrix.users.User;
 import com.crm.hirebrix.users.UserRepository;
 import com.crm.hirebrix.users.UserService;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -31,7 +25,7 @@ import java.util.Optional;
 public class GoogleAuthController {
 
     private final UserService userService;
-    private final UserInviteRepository inviteRepository;
+    private final InviteRepository inviteRepository;
     private final UserRepository userRepository;
 
     @Value("${google.client.id}")
@@ -59,60 +53,14 @@ public class GoogleAuthController {
                         .body(Map.of("message", "Failed to fetch user info"));
 
             String googleEmail = ((String) userInfo.get("email")).toLowerCase();
-            String name = (String) userInfo.get("name");
 
-            // =============================
-            // A) PURE LOGIN FLOW (No token)
-            // =============================
             if (inviteToken == null || inviteEmail == null) {
-
-                Optional<UserInvite> inviteOpt = inviteRepository.findByEmail(googleEmail);
-
-                if (inviteOpt.isEmpty())
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body(Map.of("message", "User not invited"));
-
-                UserInvite invite = inviteOpt.get();
-
-                if (!"Accepted".equalsIgnoreCase(invite.getStatus()))
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body(Map.of("message", "User not activated yet"));
-
-                Optional<User> userOpt = userRepository.findByEmail(googleEmail);
-
-                if (userOpt.isEmpty())
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                            .body(Map.of("message", "User account not found"));
-
-                User user = userOpt.get();
-                String jwt = userService.generateJwtToken(user);
-
-                return ResponseEntity.ok(Map.of(
-                        "token", jwt,
-//                        "email", googleEmail,
-//                        "name", name,
-                        "role", user.getRole(),
-//                        "companyId", user.getCompanyId(),
-                        "userId", user.getId()
-                ));
-
+                User user = validatePureLoginUser(googleEmail);
+                return ResponseEntity.ok(buildJwtResponse(user));
             }
 
-            // =============================
-            // B) INVITE FLOW (WITH TOKEN)
-            // =============================
             User user = userService.registerOrUpdateFromInvite(userInfo, inviteToken, inviteEmail);
-            String jwt = userService.generateJwtToken(user);
-
-            return ResponseEntity.ok(Map.of(
-                    "token", jwt,
-//                    "email", googleEmail,
-//                    "name", name,
-                    "role", user.getRole(),
-//                    "companyId", user.getCompanyId(),
-                    "userId", user.getId()
-            ));
-
+            return ResponseEntity.ok(buildJwtResponse(user));
 
         } catch (Exception e) {
             log.error("Google Auth Error: {}", e.getMessage(), e);
@@ -121,5 +69,29 @@ public class GoogleAuthController {
         }
     }
 
+    /* =========================
+       HELPER: PURE LOGIN VALIDATION
+    ========================= */
+    private User validatePureLoginUser(String email) {
+        Invite invite = inviteRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not invited"));
 
+        if (!"Accepted".equalsIgnoreCase(invite.getStatus()))
+            throw new IllegalArgumentException("User not activated yet");
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User account not found"));
+    }
+
+    /* =========================
+       HELPER: BUILD JWT RESPONSE
+    ========================= */
+    private Map<String, Object> buildJwtResponse(User user) {
+        String jwt = userService.generateJwtToken(user);
+        return Map.of(
+                "token", jwt,
+                "role", user.getRole(),
+                "userId", user.getId()
+        );
+    }
 }

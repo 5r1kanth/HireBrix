@@ -21,6 +21,15 @@ export const updateUser = (userId, user) => {
 };
 
 /* =========================
+   Resend Invite
+========================= */
+export const resendInvite = (userId) => {
+    return apiRequest(`/users/${userId}/resend-invite`, {
+        method: "POST",
+    });
+};
+
+/* =========================
    Get all active users for a company with optional search
 ========================= */
 export const getUsersByCompany = async (companyId, search = "") => {

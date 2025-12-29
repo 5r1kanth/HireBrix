@@ -60,6 +60,28 @@ public class UserController {
     }
 
     /* =========================
+        RESEND INVITE
+    ========================= */
+    @PostMapping("/{id}/resend-invite")
+    public ApiResponse<String> resendInvite(@PathVariable String id) {
+        User user = userService.getUserById(id);
+        if (user == null) {
+            return new ApiResponse<>(false, "User not found");
+        }
+        if ("Active".equalsIgnoreCase(user.getStatus())) {
+            return new ApiResponse<>(false, "User is already active. Invite not required.");
+        }
+        if (user.isDeleted()){
+            userService.restoreUser(id);
+        }
+
+        // Reuse your existing service method
+        userService.createUserAndSendInvite(user);
+
+        return new ApiResponse<>(true, "Invite resent successfully");
+    }
+
+    /* =========================
        SOFT DELETE USER
        (Deactivate, NOT remove)
     ========================= */

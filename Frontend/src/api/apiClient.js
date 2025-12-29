@@ -12,7 +12,7 @@ async function apiRequest(url, options = {}) {
     const data = await response.json();
 
     if (!response.ok || data.success === false) {
-        throw new Error(data.message || "API Error");
+        throw new Error(data.data || "API Error");
     }
 
     return data.data;

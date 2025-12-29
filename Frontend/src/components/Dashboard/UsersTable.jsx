@@ -1,20 +1,35 @@
 import { useState, useMemo, useEffect } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, CheckIcon, XMarkIcon, TrashIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, CheckIcon, XMarkIcon, TrashIcon, ArrowPathIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
 import { rowHeight } from "@/data/adminData";
 import SearchInput from "./SearchInput";
 import { useAuth } from "@/context/AuthContext";
 
-export default function UsersTable({ title, columns, data = [], itemsPerPage = 10, onSave, onDelete, onRestore, showDeleted = false, activeRole = null, loading = false }) {
+export default function UsersTable({
+  title,
+  columns,
+  data = [],
+  itemsPerPage = 10,
+  onSave,
+  onDelete,
+  onRestore,
+  onResendInvite,
+  showDeleted = false,
+  activeRole = null,
+  loading = false,
+}) {
   const [page, setPage] = useState(1);
   const [editingRowId, setEditingRowId] = useState(null);
   const [editData, setEditData] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [restoreTarget, setRestoreTarget] = useState(null); // <-- New state for restore confirmation
   const [searchTerm, setSearchTerm] = useState("");
+  const [resendTarget, setResendTarget] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [showToast, setShowToast] = useState(false);
 
   const { companyConfig, loading: authLoading } = useAuth();
 
-  const ROLE_OPTIONS = companyConfig?.roles || ["Admin", "Manager"];
+  const ROLE_OPTIONS = companyConfig?.roles || ["Admin", "Manager", "Team Lead", "Recruiter", "Consultant"];
   const STATUS_OPTIONS = companyConfig?.userStatuses || ["Active", "Inactive"];
 
   // -------------------------
@@ -70,14 +85,39 @@ export default function UsersTable({ title, columns, data = [], itemsPerPage = 1
     setEditData({});
   };
 
-  const confirmDelete = () => {
-    onDelete?.(deleteTarget);
+  const confirmDelete = async () => {
+    const result = await onDelete?.(deleteTarget);
+    setUpMessage(result);
     setDeleteTarget(null);
+    cardTimeOut();
   };
 
-  const confirmRestore = () => {
-    onRestore?.(restoreTarget);
+  const confirmRestore = async () => {
+    const result = await onRestore?.(restoreTarget);
+    setUpMessage(result);
     setRestoreTarget(null);
+    cardTimeOut();
+  };
+
+  const confirmResend = async () => {
+    const result = await onResendInvite?.(resendTarget.id);
+    setUpMessage(result);
+    setResendTarget(null);
+    cardTimeOut();
+  };
+
+  const setUpMessage = (result) => {
+    if (result.success) {
+      setMessage({ type: "success", text: result.message });
+    } else {
+      setMessage({ type: "error", text: result.message });
+    }
+  };
+
+  const cardTimeOut = () => {
+    setShowToast(true);
+    setTimeout(() => setMessage(null), 6500);
+    setTimeout(() => setShowToast(false), 4000);
   };
 
   const getStatusBadge = (status) => {
@@ -85,7 +125,8 @@ export default function UsersTable({ title, columns, data = [], itemsPerPage = 1
     const map = {
       Active: "bg-green-100 text-green-700",
       Inactive: "bg-red-100 text-red-700",
-      Invited: "bg-purple-100 text-purple-700",
+      Expired: "bg-purple-100 text-purple-700",
+      Invited: "bg-blue-100 text-blue-700",
     };
     return <span className={`${base} ${map[status] || "bg-gray-100 text-gray-700"}`}>{status}</span>;
   };
@@ -184,12 +225,14 @@ export default function UsersTable({ title, columns, data = [], itemsPerPage = 1
                       </div>
                     ) : showDeleted ? (
                       <div className="flex justify-center">
-                        <ArrowPathIcon onClick={() => setRestoreTarget(row)} className="w-5 h-5 cursor-pointer text-green-600" />
+                        <ArrowPathIcon onClick={() => setRestoreTarget(row)} className="w-5 h-5 cursor-pointer text-green-600" title="Restore" />
+                        <EnvelopeIcon onClick={() => setResendTarget(row)} className="w-5 h-5 ml-2 cursor-pointer text-blue-500" />
                       </div>
                     ) : (
                       <div className="flex justify-center">
-                        <PencilSquareIcon onClick={() => handleEditClick(row)} className="w-5 h-5 cursor-pointer text-blue-600" />
-                        <TrashIcon onClick={() => setDeleteTarget(row)} className="w-5 h-5 ml-2 cursor-pointer text-red-600" />
+                        <PencilSquareIcon onClick={() => handleEditClick(row)} className="w-5 h-5 cursor-pointer text-blue-600" title="Edit" />
+                        <TrashIcon onClick={() => setDeleteTarget(row)} className="w-5 h-5 ml-2 cursor-pointer text-red-600" title="Delete" />
+                        <EnvelopeIcon onClick={() => setResendTarget(row)} className="w-5 h-5 ml-2 cursor-pointer text-blue-500" title="Re-invite" />
                       </div>
                     )}
                   </td>
@@ -272,6 +315,42 @@ export default function UsersTable({ title, columns, data = [], itemsPerPage = 1
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* RESEND INVITE MODAL */}
+      {resendTarget && (
+        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setResendTarget(null)}>
+          <div className="bg-white rounded-md p-6 w-full max-w-md shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Confirm Resend Invite</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to resend invite to{" "}
+              <strong>
+                {resendTarget.firstName} {resendTarget.lastName}
+              </strong>
+              ?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setResendTarget(null)} className="px-4 py-2 border rounded">
+                Cancel
+              </button>
+              <button onClick={confirmResend} className="px-4 py-2 bg-blue-600 text-white rounded">
+                Resend
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* TOAST */}
+      {message && (
+        <div
+          className={`
+      fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg text-sm font-medium
+      transition-all duration-500 ease-in-out
+      ${message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+      ${showToast ? "translate-x-0 opacity-100" : "translate-x-40 opacity-0"}
+    `}>
+          {message.text}
         </div>
       )}
     </div>

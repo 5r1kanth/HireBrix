@@ -7,9 +7,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
-@Document(collection = "user_invites")
+@Document(collection = "invites")
 @Data
-public class UserInvite {
+public class Invite {
 
     @Id
     private String id;

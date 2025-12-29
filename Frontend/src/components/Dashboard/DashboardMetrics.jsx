@@ -1,12 +1,12 @@
 export default function DashboardMetrics({ roleCounts, activeRole, onRoleSelect }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-7 gap-4 my-2">
+    <div className="grid grid-cols-1 md:grid-cols-7 gap-2 h-full w-full items-center">
       {Object.entries(roleCounts).map(([role, count]) => {
         const isDeleted = role === "Deleted";
         const isActive = role === "Active";
         const isSelected = activeRole === role;
 
-        let cardClass = "cursor-pointer rounded-md shadow p-4 text-center transition border";
+        let cardClass = "cursor-pointer rounded-md shadow p-4 text-center transition border py-6";
 
         if (isSelected) {
           cardClass += isDeleted ? " bg-red-100 border-red-500 ring-2 ring-red-500" : " bg-green-100 border-green-600 ring-2 ring-green-600";

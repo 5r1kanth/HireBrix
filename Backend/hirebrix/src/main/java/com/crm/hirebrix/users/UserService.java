@@ -1,10 +1,9 @@
 package com.crm.hirebrix.users;
 
 import com.crm.hirebrix.common.NameUtils;
-import com.crm.hirebrix.email.EmailService;
+import com.crm.hirebrix.invites.Invite;
 import com.crm.hirebrix.invites.InviteService;
-import com.crm.hirebrix.invites.UserInvite;
-import com.crm.hirebrix.invites.UserInviteRepository;
+import com.crm.hirebrix.invites.InviteRepository;
 import com.crm.hirebrix.security.JwtService;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCrypt;
@@ -21,15 +20,18 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final UserInviteRepository inviteRepository;
+    private final InviteRepository inviteRepository;
     private final JwtService jwtService;
+    private final InviteService inviteService;
 
     public UserService(UserRepository userRepository,
-                       UserInviteRepository inviteRepository,
-                       JwtService jwtService) {
+                       InviteRepository inviteRepository,
+                       JwtService jwtService,
+                       InviteService inviteService) {
         this.userRepository = userRepository;
         this.inviteRepository = inviteRepository;
         this.jwtService = jwtService;
+        this.inviteService = inviteService;
     }
 
     /* =========================
@@ -40,10 +42,14 @@ public class UserService {
             throw new IllegalArgumentException("Email and Company ID are required");
         }
 
-        userRepository
-                .findByEmailAndCompanyIdAndIsDeletedFalse(user.getEmail(), user.getCompanyId())
-                .ifPresent(u -> {
-                    throw new IllegalArgumentException("User already exists");
+//        userRepository.findByEmailAndCompanyIdAndIsDeletedFalse(user.getEmail(), user.getCompanyId())
+//                .ifPresent(u -> { throw new IllegalArgumentException("User already exists"); });
+
+        userRepository.findByEmailAndCompanyIdAndIsDeletedFalse(user.getEmail(), user.getCompanyId())
+                .ifPresent(existingUser -> {
+                    if ("Active".equalsIgnoreCase(existingUser.getStatus())) {
+                        throw new IllegalArgumentException("User already exists and is active");
+                    }
                 });
 
         user.setFirstName(NameUtils.normalize(user.getFirstName()));
@@ -62,28 +68,23 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /* =========================
+       CREATE USER AND SEND INVITE
+    ========================= */
     public User createUserAndSendInvite(User user) {
         User newUser = createUser(user);
-
-        String rawToken = InviteService.generateToken();
-        String hashedToken = BCrypt.hashpw(rawToken, BCrypt.gensalt());
-
-        UserInvite invite = new UserInvite();
-        invite.setCompanyId(user.getCompanyId());
-        invite.setEmail(user.getEmail().toLowerCase());
-        invite.setRole(user.getRole());
-        invite.setDepartment(user.getDepartment());
-        invite.setTokenHash(hashedToken);
-        invite.setStatus("Pending");
-        invite.setSentAt(Instant.now());
-        invite.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
-
-        inviteRepository.save(invite);
-        EmailService.sendInvite(user.getEmail(), rawToken);
-
+        inviteService.createAndSendInvite(
+                newUser.getEmail(),
+                newUser.getCompanyId(),
+                newUser.getRole(),
+                newUser.getDepartment()
+        );
         return newUser;
     }
 
+    /* =========================
+       FORM FULL NAME
+    ========================= */
     public String formFullName(String firstName, String middleName, String lastName){
         return ((middleName != null) ?
                 (((firstName != null) ? firstName : "") + " " + middleName + " " + (lastName != null ? lastName : "")) :
@@ -91,7 +92,19 @@ public class UserService {
     }
 
     /* =========================
-       FETCH ACTIVE USERS SORTED BY CREATED DATE DESC
+       POPULATE USER FIELDS FROM MAP
+    ========================= */
+    private void populateUserFields(User user, Map<String, Object> userInfo) {
+        user.setFirstName(NameUtils.normalize((String) userInfo.get("given_name")));
+        user.setLastName(NameUtils.normalize((String) userInfo.get("family_name")));
+        user.setFullName(NameUtils.normalize((String) userInfo.get("name")));
+        user.setGoogleId((String) userInfo.get("sub"));
+        user.setPicture((String) userInfo.get("picture"));
+        user.setUpdatedAt(Instant.now());
+    }
+
+    /* =========================
+       FETCH ACTIVE USERS SORTED BY UPDATED DATE DESC
     ========================= */
     public List<User> getUsersByCompany(String companyId) {
         return userRepository.findByCompanyIdAndIsDeletedFalse(companyId, Sort.by(Sort.Direction.DESC, "updatedAt"));
@@ -104,7 +117,8 @@ public class UserService {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        existing.setEmail(user.getEmail());
+        boolean emailChanged = !existing.getEmail().equalsIgnoreCase(user.getEmail());
+
         existing.setFirstName(NameUtils.normalize(user.getFirstName()));
         existing.setMiddleName(NameUtils.normalize(user.getMiddleName()));
         existing.setLastName(NameUtils.normalize(user.getLastName()));
@@ -114,7 +128,28 @@ public class UserService {
         existing.setFullName(formFullName(user.getFirstName(), user.getMiddleName(), user.getLastName()));
         existing.setUpdatedAt(Instant.now());
 
+        if (emailChanged) {
+            handleEmailChange(existing, user.getEmail());
+        }
+
         return userRepository.save(existing);
+    }
+
+    /* =========================
+       HANDLE EMAIL CHANGE
+    ========================= */
+    private void handleEmailChange(User user, String newEmail) {
+        user.setEmail(newEmail);
+        user.setStatus("Invited");
+        user.setInvitedAt(Instant.now());
+        user.setUpdatedAt(Instant.now());
+
+        inviteService.createAndSendInvite(
+                user.getEmail(),
+                user.getCompanyId(),
+                user.getRole(),
+                user.getDepartment()
+        );
     }
 
     /* =========================
@@ -126,7 +161,8 @@ public class UserService {
 
         user.setDeleted(true);
         user.setDeletedAt(Instant.now());
-        user.setStatus("Inactive");
+        if (user.getStatus().equalsIgnoreCase("Active"))
+            user.setStatus("Inactive");
         user.setUpdatedAt(Instant.now());
 
         userRepository.save(user);
@@ -154,14 +190,13 @@ public class UserService {
     }
 
     /* =========================
-       SEARCH USERS SORTED BY CREATED DATE DESC
+       SEARCH USERS
     ========================= */
     public List<User> searchUsers(String companyId, String keyword) {
         if (keyword == null || keyword.isEmpty()) {
             return getUsersByCompany(companyId);
         }
 
-        // Search returns unsorted by default; sort via repository if possible
         List<User> results = userRepository
                 .findByCompanyIdAndIsDeletedFalseAndFullNameContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndEmailContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndRoleContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndDepartmentContainingIgnoreCase(
                         companyId, keyword,
@@ -170,9 +205,7 @@ public class UserService {
                         companyId, keyword
                 );
 
-        // Sort in Java if repository doesn't support multi-field search sorting
         results.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
-
         return results;
     }
 
@@ -180,41 +213,18 @@ public class UserService {
        REGISTER OR UPDATE FROM INVITE
     ========================= */
     public User registerOrUpdateFromInvite(Map<String, Object> userInfo, String inviteToken, String inviteEmail) {
-        Optional<UserInvite> inviteOpt = inviteRepository.findAll().stream()
-                .filter(inv -> BCrypt.checkpw(inviteToken, inv.getTokenHash()))
-                .findFirst();
 
-        if (inviteOpt.isEmpty()) {
-            throw new IllegalArgumentException("Invalid or expired invite token");
-        }
-
-        UserInvite invite = inviteOpt.get();
-
-        if (invite.getExpiresAt().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Invite has expired");
-        }
-
-        if (!invite.getEmail().equalsIgnoreCase(inviteEmail)){
-            throw new IllegalArgumentException("Invite Email/Token Mismatch");
-        }
+        Invite invite = inviteService.validateInvite(inviteToken, inviteEmail);
 
         User user = userRepository.findByEmail(inviteEmail.toLowerCase()).orElse(new User());
 
-        user.setFirstName(NameUtils.normalize((String) userInfo.get("given_name")));
-        user.setLastName(NameUtils.normalize((String) userInfo.get("family_name")));
-        user.setFullName(NameUtils.normalize((String) userInfo.get("name")));
+        populateUserFields(user, userInfo);
         user.setStatus("Active");
-        user.setUpdatedAt(Instant.now());
-        user.setGoogleId((String) userInfo.get("sub"));
-        user.setPicture((String) userInfo.get("picture"));
         user.setActivatedAt(Instant.now());
-        user.setUpdatedAt(Instant.now());
 
         user = userRepository.save(user);
 
-        invite.setStatus("Accepted");
-        invite.setAcceptedAt(Instant.now());
-        inviteRepository.save(invite);
+        inviteService.markInviteAccepted(invite);
 
         return user;
     }
@@ -226,9 +236,9 @@ public class UserService {
         return userRepository.findById(id).orElse(null);
     }
 
-    /**
-     * Generate JWT token for authenticated user
-     */
+    /* =========================
+       GENERATE JWT
+    ========================= */
     public String generateJwtToken(User user) {
         return jwtService.generateToken(user.getId(), user.getEmail(), user.getCompanyId(), user.getRole());
     }
