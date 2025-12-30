@@ -11,6 +11,7 @@ import Admin from "./pages/Admin";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import DesktopGuard from "./components/Guards/DesktopGuard";
 import { AuthProvider } from "./context/AuthContext";
+import Signup from "./pages/Signup";
 
 export default function App() {
   return (
@@ -23,6 +24,14 @@ export default function App() {
           element={
             <DesktopGuard>
               <Login />
+            </DesktopGuard>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <DesktopGuard>
+              <Signup />
             </DesktopGuard>
           }
         />
