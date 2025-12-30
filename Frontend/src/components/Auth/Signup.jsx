@@ -25,10 +25,15 @@ export default function Signup() {
       {/* LEFT SECTION */}
       <div className="w-3/5 electric-blue text-white flex flex-col justify-between h-screen relative overflow-hidden">
         {/* TEXT BLOCK */}
-        <div className="text-center p-10 h-full">
-          <h1 className="text-4xl font-bold leading-tight">Build Your Business Faster with Our CRM</h1>
+        <div className="w-full text-left pt-2 pb-10 pl-40 h-full flex flex-col justify-center">
+          <h1 className="w-full text-5xl sm:text-6xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-[var(--hiring-lime)] to-[var(--electric-blue)] text-transparent bg-clip-text">
+            HireBrix
+          </h1>
+          <span className="block text-3xl font-medium opacity-95 -mt-6">Track & Hire</span>
 
-          <p className="mt-4 text-lg opacity-90">Streamline hiring, manage clients, and grow your revenue efficiently.</p>
+          <p className="mt-4 text-white text-xs sm:text-sm md:text-base leading-relaxed max-w-md mb-10">
+            Bring complete visibility to your consultant lifecycle — from onboarding to submissions, interviews, performance tracking, and successful placements.
+          </p>
         </div>
 
         {/* DASHBOARD MOCK AT BOTTOM */}
