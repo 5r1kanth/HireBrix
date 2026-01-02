@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import SignupDashboardMock from "../Dashboard/SignupDashboardMock";
+import { signup } from "@/api/auth.api";
+import { useToast } from "@/context/ToastContext";
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -10,13 +12,42 @@ export default function Signup() {
     companyName: "",
   });
 
+  const toast = useToast();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const capitalize = (str) =>
+    str
+      ?.trim()
+      .replace(/\s+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase()) || "";
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Signup Data: ", formData);
+    const companyId = "";
+
+    const payload = {
+      companyName: formData.companyName,
+      email: formData.email.trim(),
+      firstName: capitalize(formData.firstName).trim(),
+      middleName: capitalize(formData.middleName).trim(),
+      lastName: capitalize(formData.lastName).trim(),
+    };
+
+    try {
+      const result = await signup(payload);
+      console.log("sugnup.jsx - ", result.success);
+      if (result?.success === false) {
+        toast.error(result?.message || "Signup failed.");
+        return;
+      }
+
+      toast.success(result?.message || "Signup successful! Check your email.");
+    } catch (error) {
+      toast.error(error?.message || "Signup failed. Please try again.");
+    }
     // TODO: call signup API here
   };
 
@@ -24,73 +55,108 @@ export default function Signup() {
     <div className="min-h-screen flex">
       {/* LEFT SECTION */}
       <div className="w-3/5 electric-blue text-white flex flex-col justify-between h-screen relative overflow-hidden">
-        {/* TEXT BLOCK */}
-        <div className="w-full text-left pt-2 pb-10 pl-40 h-full flex flex-col justify-center">
-          <h1 className="w-full text-5xl sm:text-6xl font-extrabold tracking-tight mb-6 bg-gradient-to-r from-[var(--hiring-lime)] to-[var(--electric-blue)] text-transparent bg-clip-text">
+        {/* BRANDING + TEXT */}
+        <div className="w-full text-left pt-14 pl-32 pr-10 flex flex-col z-10">
+          <h1
+            className="text-6xl font-extrabold tracking-tight mb-3
+                         bg-gradient-to-r from-[var(--hiring-lime)]
+                         to-[var(--electric-blue)] text-transparent bg-clip-text">
             HireBrix
           </h1>
-          <span className="block text-3xl font-medium opacity-95 -mt-6">Track & Hire</span>
 
-          <p className="mt-4 text-white text-xs sm:text-sm md:text-base leading-relaxed max-w-md mb-10">
+          <span className="text-2xl font-medium opacity-90 -mt-1 tracking-wide">Track & Hire</span>
+
+          <p className="mt-6 text-white opacity-90 text-sm sm:text-base leading-relaxed max-w-md">
             Bring complete visibility to your consultant lifecycle — from onboarding to submissions, interviews, performance tracking, and successful placements.
           </p>
         </div>
 
-        {/* DASHBOARD MOCK AT BOTTOM */}
-        <div className="relative">
+        {/* Dashboard Mock */}
+        <div className="absolute -bottom-24 left-24 z-0">
           <SignupDashboardMock />
         </div>
       </div>
 
       {/* RIGHT SECTION - SIGNUP FORM */}
-      <div className="w-2/5 flex items-center justify-center px-12 bg-white relative overflow-hidden">
-        {/* Subtle background shapes */}
-        <div className="absolute -top-16 -right-16 w-40 h-40 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full opacity-20 blur-3xl"></div>
-        <div className="absolute -bottom-20 -left-10 w-60 h-60 bg-gradient-to-tr from-pink-200 to-yellow-200 rounded-full opacity-15 blur-3xl"></div>
+      <div className="w-2/5 bg-white flex items-center justify-center px-14 relative">
+        {/* Soft BG Accents */}
+        <div
+          className="absolute -top-16 -right-20 w-52 h-52 
+                        bg-gradient-to-br from-blue-200 to-purple-200
+                        rounded-full opacity-20 blur-[80px]"></div>
+        <div
+          className="absolute -bottom-24 -left-14 w-72 h-72
+                        bg-gradient-to-tr from-pink-200 to-yellow-200
+                        rounded-full opacity-20 blur-[80px]"></div>
 
         <div className="w-full max-w-md relative z-10">
-          <h2 className="text-3xl font-bold mb-2 text-gray-800">Create Your Account</h2>
-          <p className="text-gray-500 mb-6 text-sm">Join now and start managing your business efficiently.</p>
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">Create Your Account</h2>
+          <p className="text-gray-500 text-sm mb-8">Join now and start managing your business efficiently.</p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* First + Last Name */}
+            {/* First + Middle + Last Name */}
             <div className="flex gap-3">
-              <div className="w-1/2 relative">
+              {/* First */}
+              <div className="relative w-1/3">
                 <input
                   type="text"
                   name="firstName"
                   placeholder=" "
-                  onChange={handleChange}
                   required
-                  className="w-full p-3 border-b-2 border-gray-300 focus:border-blue-500 outline-none peer transition"
+                  className="peer w-full p-3 border-b-2 border-gray-300 
+                             focus:border-[var(--electric-blue)]
+                             outline-none transition"
+                  onChange={handleChange}
                 />
                 <label
-                  className="
-            absolute left-0 -top-3 text-gray-500 text-sm transition-all
-            peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base
-            peer-focus:-top-3 peer-focus:text-gray-500 peer-focus:text-sm
-            pointer-events-none
-          ">
+                  className="absolute left-0 text-gray-500 text-sm
+                                   peer-placeholder-shown:top-3 peer-placeholder-shown:text-base
+                                   peer-focus:-top-3 peer-focus:text-sm
+                                   peer-focus:text-gray-700 top-0
+                                   pointer-events-none transition-all">
                   First Name
                 </label>
               </div>
 
-              <div className="w-1/2 relative">
+              {/* Middle */}
+              <div className="relative w-1/3">
+                <input
+                  type="text"
+                  name="middleName"
+                  placeholder=" "
+                  className="peer w-full p-3 border-b-2 border-gray-300 
+                             focus:border-[var(--electric-blue)]
+                             outline-none transition"
+                  onChange={handleChange}
+                />
+                <label
+                  className="absolute left-0 text-gray-500 text-sm
+                                   peer-placeholder-shown:top-3 peer-placeholder-shown:text-base
+                                   peer-focus:-top-3 peer-focus:text-sm
+                                   peer-focus:text-gray-700 top-0
+                                   pointer-events-none transition-all">
+                  Middle
+                </label>
+              </div>
+
+              {/* Last */}
+              <div className="relative w-1/3">
                 <input
                   type="text"
                   name="lastName"
                   placeholder=" "
-                  onChange={handleChange}
                   required
-                  className="w-full p-3 border-b-2 border-gray-300 focus:border-blue-500 outline-none peer transition"
+                  className="peer w-full p-3 border-b-2 border-gray-300 
+                             focus:border-[var(--electric-blue)]
+                             outline-none transition"
+                  onChange={handleChange}
                 />
                 <label
-                  className="
-            absolute left-0 -top-3 text-gray-500 text-sm transition-all
-            peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base
-            peer-focus:-top-3 peer-focus:text-gray-500 peer-focus:text-sm
-            pointer-events-none
-          ">
+                  className="absolute left-0 text-gray-500 text-sm
+                                   peer-placeholder-shown:top-3 peer-placeholder-shown:text-base
+                                   peer-focus:-top-3 peer-focus:text-sm
+                                   peer-focus:text-gray-700 top-0
+                                   pointer-events-none transition-all">
                   Last Name
                 </label>
               </div>
@@ -103,17 +169,18 @@ export default function Signup() {
                 name="email"
                 placeholder=" "
                 required
+                className="peer w-full p-3 border-b-2 border-gray-300 
+                           focus:border-[var(--electric-blue)]
+                           outline-none transition"
                 onChange={handleChange}
-                className="w-full p-3 border-b-2 border-gray-300 focus:border-blue-500 outline-none peer transition"
               />
               <label
-                className="
-          absolute left-0 -top-3 text-gray-500 text-sm transition-all
-          peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base
-          peer-focus:-top-3 peer-focus:text-gray-500 peer-focus:text-sm
-          pointer-events-none
-        ">
-                Email Address
+                className="absolute left-0 text-gray-500 text-sm
+                                 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base
+                                 peer-focus:-top-3 peer-focus:text-sm
+                                 peer-focus:text-gray-700 top-0
+                                 pointer-events-none transition-all">
+                Work Email
               </label>
             </div>
 
@@ -124,21 +191,26 @@ export default function Signup() {
                 name="companyName"
                 placeholder=" "
                 required
+                className="peer w-full p-3 border-b-2 border-gray-300 
+                           focus:border-[var(--electric-blue)]
+                           outline-none transition"
                 onChange={handleChange}
-                className="w-full p-3 border-b-2 border-gray-300 focus:border-blue-500 outline-none peer transition"
               />
               <label
-                className="
-          absolute left-0 -top-3 text-gray-500 text-sm transition-all
-          peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400 peer-placeholder-shown:text-base
-          peer-focus:-top-3 peer-focus:text-gray-500 peer-focus:text-sm
-          pointer-events-none
-        ">
+                className="absolute left-0 text-gray-500 text-sm
+                                 peer-placeholder-shown:top-3 peer-placeholder-shown:text-base
+                                 peer-focus:-top-3 peer-focus:text-sm
+                                 peer-focus:text-gray-700 top-0
+                                 pointer-events-none transition-all">
                 Company Name
               </label>
             </div>
 
-            <button className="w-full py-3 bg-gradient-to-tr from-[var(--electric-blue)] to-[var(--hiring-lime)] text-white rounded-md font-semibold hover:scale-105 transform transition">
+            {/* Submit */}
+            <button
+              className="w-full py-3 mt-2 font-semibold rounded-md text-white
+                         bg-gradient-to-tr from-[var(--electric-blue)] to-[var(--hiring-lime)]
+                         hover:scale-[1.03] active:scale-100 transition-transform shadow-md">
               Sign Up
             </button>
           </form>
@@ -151,6 +223,7 @@ export default function Signup() {
           </p>
         </div>
       </div>
+      {/* <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast((t) => ({ ...t, show: false }))} /> */}
     </div>
   );
 }

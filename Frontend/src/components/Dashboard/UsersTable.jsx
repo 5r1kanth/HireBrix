@@ -24,8 +24,6 @@ export default function UsersTable({
   const [restoreTarget, setRestoreTarget] = useState(null); // <-- New state for restore confirmation
   const [searchTerm, setSearchTerm] = useState("");
   const [resendTarget, setResendTarget] = useState(null);
-  const [message, setMessage] = useState(null);
-  const [showToast, setShowToast] = useState(false);
 
   const { companyConfig, loading: authLoading } = useAuth();
 
@@ -86,39 +84,33 @@ export default function UsersTable({
   };
 
   const confirmDelete = async () => {
-    const result = await onDelete?.(deleteTarget);
-    setUpMessage(result);
+    await onDelete?.(deleteTarget);
     setDeleteTarget(null);
-    cardTimeOut();
   };
 
   const confirmRestore = async () => {
-    const result = await onRestore?.(restoreTarget);
-    setUpMessage(result);
+    await onRestore?.(restoreTarget);
     setRestoreTarget(null);
-    cardTimeOut();
   };
 
   const confirmResend = async () => {
-    const result = await onResendInvite?.(resendTarget.id);
-    setUpMessage(result);
+    await onResendInvite?.(resendTarget.id);
     setResendTarget(null);
-    cardTimeOut();
   };
 
-  const setUpMessage = (result) => {
-    if (result.success) {
-      setMessage({ type: "success", text: result.message });
-    } else {
-      setMessage({ type: "error", text: result.message });
-    }
-  };
+  // const setUpMessage = (result) => {
+  //   if (result.success) {
+  //     setMessage({ type: "success", text: result.message });
+  //   } else {
+  //     setMessage({ type: "error", text: result.message });
+  //   }
+  // };
 
-  const cardTimeOut = () => {
-    setShowToast(true);
-    setTimeout(() => setMessage(null), 6500);
-    setTimeout(() => setShowToast(false), 4000);
-  };
+  // const cardTimeOut = () => {
+  //   setShowToast(true);
+  //   setTimeout(() => setMessage(null), 6500);
+  //   setTimeout(() => setShowToast(false), 4000);
+  // };
 
   const getStatusBadge = (status) => {
     const base = "px-2 py-1 rounded-full text-[10px] font-semibold";
@@ -339,18 +331,6 @@ export default function UsersTable({
               </button>
             </div>
           </div>
-        </div>
-      )}
-      {/* TOAST */}
-      {message && (
-        <div
-          className={`
-      fixed top-4 right-4 z-50 px-4 py-2 rounded shadow-lg text-sm font-medium
-      transition-all duration-500 ease-in-out
-      ${message.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
-      ${showToast ? "translate-x-0 opacity-100" : "translate-x-40 opacity-0"}
-    `}>
-          {message.text}
         </div>
       )}
     </div>

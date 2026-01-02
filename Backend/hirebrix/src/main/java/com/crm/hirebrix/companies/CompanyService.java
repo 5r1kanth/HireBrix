@@ -18,6 +18,9 @@ public class CompanyService {
        Create a new company
     ========================== */
     public Company createCompany(Company company) {
+        if (!companyRepository.findByName(company.getName()).isEmpty()){
+            return null;
+        }
         company.setCreatedAt(Instant.now());
         return companyRepository.save(company);
     }

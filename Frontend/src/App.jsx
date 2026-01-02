@@ -12,114 +12,117 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import DesktopGuard from "./components/Guards/DesktopGuard";
 import { AuthProvider } from "./context/AuthContext";
 import Signup from "./pages/Signup";
+import { ToastProvider } from "./context/ToastContext";
 
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Landing />} />
-        <Route
-          path="/login"
-          element={
-            <DesktopGuard>
-              <Login />
-            </DesktopGuard>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <DesktopGuard>
-              <Signup />
-            </DesktopGuard>
-          }
-        />
-
-        {/* Protected Routes with Role-based Access */}
-
-        {/* Admin */}
-        <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+      <ToastProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
           <Route
-            path="/admin"
+            path="/login"
             element={
               <DesktopGuard>
-                <Admin />
+                <Login />
               </DesktopGuard>
             }
           />
-        </Route>
-
-        {/* Manager */}
-        <Route element={<ProtectedRoute allowedRoles={["Manager"]} />}>
           <Route
-            path="/manager"
+            path="/signup"
             element={
               <DesktopGuard>
-                <Manager />
+                <Signup />
               </DesktopGuard>
             }
           />
-        </Route>
 
-        {/* Team Lead */}
-        <Route element={<ProtectedRoute allowedRoles={["Team Lead"]} />}>
+          {/* Protected Routes with Role-based Access */}
+
+          {/* Admin */}
+          <Route element={<ProtectedRoute allowedRoles={["Admin"]} />}>
+            <Route
+              path="/admin"
+              element={
+                <DesktopGuard>
+                  <Admin />
+                </DesktopGuard>
+              }
+            />
+          </Route>
+
+          {/* Manager */}
+          <Route element={<ProtectedRoute allowedRoles={["Manager"]} />}>
+            <Route
+              path="/manager"
+              element={
+                <DesktopGuard>
+                  <Manager />
+                </DesktopGuard>
+              }
+            />
+          </Route>
+
+          {/* Team Lead */}
+          <Route element={<ProtectedRoute allowedRoles={["Team Lead"]} />}>
+            <Route
+              path="/teamlead"
+              element={
+                <DesktopGuard>
+                  <TeamLead />
+                </DesktopGuard>
+              }
+            />
+          </Route>
+
+          {/* Recruiter */}
+          <Route element={<ProtectedRoute allowedRoles={["Recruiter"]} />}>
+            <Route
+              path="/recruiter"
+              element={
+                <DesktopGuard>
+                  <Recruiter />
+                </DesktopGuard>
+              }
+            />
+          </Route>
+
+          {/* Consultant */}
+          <Route element={<ProtectedRoute allowedRoles={["Consultant"]} />}>
+            <Route
+              path="/consultant"
+              element={
+                <DesktopGuard>
+                  <Consultant />
+                </DesktopGuard>
+              }
+            />
+          </Route>
+
+          {/* HR Manager */}
+          <Route element={<ProtectedRoute allowedRoles={["HR Manager"]} />}>
+            <Route
+              path="/hrmanager"
+              element={
+                <DesktopGuard>
+                  <HRManager />
+                </DesktopGuard>
+              }
+            />
+          </Route>
+
+          {/* Fallback Route */}
           <Route
-            path="/teamlead"
+            path="*"
             element={
               <DesktopGuard>
-                <TeamLead />
+                <Login />
               </DesktopGuard>
             }
           />
-        </Route>
-
-        {/* Recruiter */}
-        <Route element={<ProtectedRoute allowedRoles={["Recruiter"]} />}>
-          <Route
-            path="/recruiter"
-            element={
-              <DesktopGuard>
-                <Recruiter />
-              </DesktopGuard>
-            }
-          />
-        </Route>
-
-        {/* Consultant */}
-        <Route element={<ProtectedRoute allowedRoles={["Consultant"]} />}>
-          <Route
-            path="/consultant"
-            element={
-              <DesktopGuard>
-                <Consultant />
-              </DesktopGuard>
-            }
-          />
-        </Route>
-
-        {/* HR Manager */}
-        <Route element={<ProtectedRoute allowedRoles={["HR Manager"]} />}>
-          <Route
-            path="/hrmanager"
-            element={
-              <DesktopGuard>
-                <HRManager />
-              </DesktopGuard>
-            }
-          />
-        </Route>
-
-        {/* Fallback Route */}
-        <Route
-          path="*"
-          element={
-            <DesktopGuard>
-              <Login />
-            </DesktopGuard>
-          }
-        />
-      </Routes>
+        </Routes>
+      </ToastProvider>
     </AuthProvider>
   );
 }

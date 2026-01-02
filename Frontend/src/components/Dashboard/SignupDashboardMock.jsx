@@ -12,6 +12,7 @@ export default function SignupDashboardMock() {
           w-[380px] h-[140px]
           rotate-[-18deg]
           z-0
+          opacity-50
         ">
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="h-10 bg-blue-400/70 rounded-md"></div>

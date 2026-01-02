@@ -11,6 +11,7 @@ import { sidebarHeader } from "@/data/consultancyData";
 import { getUsersByCompany, getDeletedUsersByCompany, updateUser, softDeleteUser, restoreUser, resendInvite } from "@/api/users.api";
 // import { logout } from "@/api/auth.api";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 
 export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -21,6 +22,8 @@ export default function Admin() {
   const [showDeleted, setShowDeleted] = useState(false);
 
   const { user, companyConfig, loading: authLoading, logout } = useAuth();
+
+  const toast = useToast();
 
   if (authLoading) return <div className="text-center p-4">Loading...</div>;
   if (!user) return <div className="text-center p-4">Not logged in</div>;
@@ -84,7 +87,7 @@ export default function Admin() {
       await updateUser(updatedUser.id, updatedUser);
       fetchAllUsers();
     } catch (err) {
-      console.error("Failed to update user", err);
+      toast.error(err?.message || "Failed to update user.");
     } finally {
       setLoading(false);
     }
@@ -95,9 +98,9 @@ export default function Admin() {
       setLoading(true);
       const result = await softDeleteUser(user.id);
       fetchAllUsers();
-      return { success: true, message: result.message || "Deleted successfully!" };
+      toast.success(result.message || "Deleted successfully!");
     } catch (error) {
-      return { success: false, message: error?.message || "Failed to delete invite" };
+      toast.error(error?.message || "Failed to delete user");
     } finally {
       setLoading(false);
     }
@@ -108,9 +111,9 @@ export default function Admin() {
       setLoading(true);
       const result = await restoreUser(user.id);
       fetchAllUsers();
-      return { success: true, message: result.message || "Restore successfully!" };
+      toast.success(result.message || "User restored successfully!");
     } catch (error) {
-      return { success: false, message: error?.message || "Failed to restore invite" };
+      toast.error(error?.message || "Failed to restore user");
     } finally {
       setLoading(false);
     }
@@ -120,9 +123,9 @@ export default function Admin() {
     try {
       const result = await resendInvite(userId);
       await fetchAllUsers();
-      return { success: true, message: result.message || "Invite resent successfully!" };
+      toast.success(result.message || "Invite resent successfully!");
     } catch (error) {
-      return { success: false, message: error?.message || "Failed to resend invite" };
+      toast.error(error?.message || "Failed to resend invite");
     }
   };
 

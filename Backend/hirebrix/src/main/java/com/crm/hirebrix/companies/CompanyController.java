@@ -20,6 +20,8 @@ public class CompanyController {
     @PostMapping
     public ApiResponse<Company> create(@RequestBody Company company) {
         Company created = companyService.createCompany(company);
+        if (created == null)
+            return new ApiResponse<>(false, null);
         return new ApiResponse<>(true, created);
     }
 
