@@ -54,13 +54,27 @@ public class GoogleAuthController {
 
             String googleEmail = ((String) userInfo.get("email")).toLowerCase();
 
-            if (inviteToken == null || inviteEmail == null) {
-                User user = validatePureLoginUser(googleEmail);
+            Invite invite = inviteRepository.findByEmail(googleEmail).orElse(null);
+
+// IF invite exists AND is still pending → onboarding
+            if (invite != null && "Pending".equalsIgnoreCase(invite.getStatus())
+                    && inviteToken != null && inviteEmail != null) {
+
+                User user = userService.registerOrUpdateFromInvite(userInfo, inviteToken, inviteEmail);
                 return ResponseEntity.ok(buildJwtResponse(user));
             }
 
-            User user = userService.registerOrUpdateFromInvite(userInfo, inviteToken, inviteEmail);
+// OTHERWISE → normal login
+            User user = validatePureLoginUser(googleEmail);
             return ResponseEntity.ok(buildJwtResponse(user));
+
+//            if (inviteToken == null || inviteEmail == null) {
+//                User user = validatePureLoginUser(googleEmail);
+//                return ResponseEntity.ok(buildJwtResponse(user));
+//            }
+//
+//            User user = userService.registerOrUpdateFromInvite(userInfo, inviteToken, inviteEmail);
+//            return ResponseEntity.ok(buildJwtResponse(user));
 
         } catch (Exception e) {
             log.error("Google Auth Error: {}", e.getMessage(), e);

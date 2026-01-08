@@ -13,6 +13,7 @@ export default function UsersTable({
   onDelete,
   onRestore,
   onResendInvite,
+  onSaveBulk,
   showDeleted = false,
   activeRole = null,
   loading = false,
@@ -24,11 +25,16 @@ export default function UsersTable({
   const [restoreTarget, setRestoreTarget] = useState(null); // <-- New state for restore confirmation
   const [searchTerm, setSearchTerm] = useState("");
   const [resendTarget, setResendTarget] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkField, setBulkField] = useState("");
 
   const { companyConfig, loading: authLoading } = useAuth();
 
-  const ROLE_OPTIONS = companyConfig?.roles || ["Admin", "Manager", "Team Lead", "Recruiter", "Consultant"];
-  const STATUS_OPTIONS = companyConfig?.userStatuses || ["Active", "Inactive"];
+  const ROLE_OPTIONS = companyConfig?.roles;
+  const STATUS_OPTIONS = companyConfig?.userStatuses;
+  const DEPT_OPTIONS = companyConfig?.departments;
+
+  const isSelected = (id) => selectedIds.includes(id);
 
   // -------------------------
   // FILTERED DATA
@@ -143,7 +149,75 @@ export default function UsersTable({
       {/* HEADER */}
       <div className="flex items-center justify-between mb-2 px-2">
         <h2 className="text-sm font-semibold text-gray-600">{title}</h2>
-        <SearchInput placeholder="Search users..." onSearch={(v) => setSearchTerm(v)} />
+        <div className="flex gap-2">
+          <div className="flex items-center gap-3 bg-gray-50 rounded">
+            {selectedIds.length > 0 && <span className="text-xs text-gray-600">{selectedIds.length} selected</span>}
+
+            {/* WHAT TO CHANGE */}
+            <select value={bulkField} onChange={(e) => setBulkField(e.target.value)} className="text-xs border rounded px-2 py-1 w-40 h-full">
+              <option value="">Actions...</option>
+              <option value="status">Status</option>
+              <option value="role">Role</option>
+              <option value="department">Department</option>
+            </select>
+
+            {bulkField && (
+              <select
+                className="text-xs border rounded px-2 py-1"
+                defaultValue=""
+                onChange={async (e) => {
+                  const value = e.target.value;
+                  if (!value) return;
+
+                  await onSaveBulk?.({
+                    ids: selectedIds,
+                    field: bulkField,
+                    value,
+                  });
+
+                  // Reset after apply
+                  setSelectedIds([]);
+                  setBulkField("");
+                }}>
+                <option value="">Select</option>
+
+                {bulkField === "status" &&
+                  STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+
+                {bulkField === "role" &&
+                  ROLE_OPTIONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+
+                {bulkField === "department" &&
+                  DEPT_OPTIONS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+              </select>
+            )}
+
+            {/* CLEAR */}
+            {/* <button
+                className="text-xs text-red-600 underline"
+                onClick={() => {
+                  setSelectedIds([]);
+                  setBulkField("");
+                  setBulkValue("");
+                }}>
+                Clear
+              </button> */}
+          </div>
+
+          <SearchInput placeholder="Search users..." onSearch={(v) => setSearchTerm(v)} />
+        </div>
       </div>
 
       {/* TABLE */}
@@ -151,6 +225,20 @@ export default function UsersTable({
         <table className="w-full text-xs border-collapse table-fixed">
           <thead>
             <tr className="bg-blue-100 text-gray-600" style={{ height: rowHeight }}>
+              <th className="p-2 text-center w-8">
+                <input
+                  type="checkbox"
+                  checked={paginatedData.length > 0 && paginatedData.every((u) => selectedIds.includes(u.id))}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedIds(paginatedData.map((u) => u.id));
+                    } else {
+                      setSelectedIds([]);
+                    }
+                  }}
+                />
+              </th>
+
               {columns.map((col) => (
                 <th key={col.accessor} className="p-2 text-center">
                   {col.label}
@@ -164,6 +252,16 @@ export default function UsersTable({
             {paginatedData.length > 0 ? (
               paginatedData.map((row) => (
                 <tr key={row.id} className={`border-t ${editingRowId === row.id ? "bg-gray-50" : "hover:bg-blue-50"}`} style={{ height: rowHeight }}>
+                  <td className="p-2 text-center">
+                    <input
+                      type="checkbox"
+                      checked={isSelected(row.id)}
+                      onChange={(e) => {
+                        setSelectedIds((prev) => (e.target.checked ? [...prev, row.id] : prev.filter((id) => id !== row.id)));
+                      }}
+                    />
+                  </td>
+
                   {columns.map((col) =>
                     editingRowId === row.id ? (
                       col.accessor === "role" ? (
@@ -232,7 +330,7 @@ export default function UsersTable({
               ))
             ) : (
               <tr style={{ height: rowHeight }}>
-                <td colSpan={columns.length + 1} className="text-center text-gray-400">
+                <td colSpan={columns.length + 2} className="text-center text-gray-400">
                   {loading ? "Loading..." : "No records found"}
                 </td>
               </tr>
@@ -240,7 +338,7 @@ export default function UsersTable({
 
             {Array.from({ length: emptyRows }).map((_, i) => (
               <tr key={i} style={{ height: rowHeight }}>
-                <td colSpan={columns.length + 1}></td>
+                <td colSpan={columns.length + 2}></td>
               </tr>
             ))}
           </tbody>

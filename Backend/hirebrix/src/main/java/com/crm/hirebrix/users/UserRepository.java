@@ -50,4 +50,7 @@ public interface UserRepository extends MongoRepository<User, String> {
     List<User> findByCompanyIdAndIsDeletedFalse(String companyId, Sort sort);
     List<User> findByCompanyIdAndIsDeletedTrue(String companyId, Sort sort);
 
+    List<User> findByIdIn(List<String> ids);
+
+
 }

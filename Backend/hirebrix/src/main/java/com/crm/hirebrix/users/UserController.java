@@ -1,13 +1,13 @@
 package com.crm.hirebrix.users;
 
 import com.crm.hirebrix.common.ApiResponse;
+import com.crm.hirebrix.users.dto.BulkUserUpdateRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:5173")
 public class UserController {
 
     private final UserService userService;
@@ -58,6 +58,16 @@ public class UserController {
         User updated = userService.updateUser(id, user);
         return new ApiResponse<>(true, updated);
     }
+
+    @PostMapping("/bulk-update")
+    public ApiResponse<String> bulkUpdateUsers(
+            @RequestParam String companyId,
+            @RequestBody BulkUserUpdateRequest request
+    ) {
+        int updated = userService.bulkUpdateUsers(companyId, request);
+        return new ApiResponse<>(true, updated + " users updated successfully");
+    }
+
 
     /* =========================
         RESEND INVITE

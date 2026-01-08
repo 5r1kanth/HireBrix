@@ -39,9 +39,6 @@ export const signup = async (payload) => {
         // Step 1: Create Company
         const result = await createCompany(payload);
         const company = result.data;
-        console.log("auth.api.js - payload - ", payload)
-
-        console.log("Company details - ", company)
 
         if (company === null)
             return result;
@@ -58,8 +55,6 @@ export const signup = async (payload) => {
         };
 
         const createdUser = await createUser(user);
-
-        console.log("User created is - ", createdUser)
         if (createdUser === null)
             return { success: true, message: "User creation failed...!!!" };
 

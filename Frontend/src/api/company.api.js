@@ -28,3 +28,47 @@ export const getCompanyById = async (companyId) => {
         return null;
     }
 };
+
+/* =========================
+   Update company general details
+========================= */
+export const updateCompany = async (companyId, payload) => {
+    try {
+        const updated = await apiRequest(`/companies/${companyId}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+        });
+        return { success: true, data: updated, message: "Company updated successfully" };
+    } catch (err) {
+        console.error("Failed to update company:", err);
+        return { success: false, data: null, message: "Company update failed" };
+    }
+};
+
+/* =========================
+   Get company config
+========================= */
+export const getCompanyConfig = async (companyId) => {
+    try {
+        const config = await apiRequest(`/company/${companyId}/config`);
+        return config;
+    } catch (err) {
+        console.error("Failed to fetch company config:", err);
+        return null;
+    }
+};
+/* =========================
+   Update company config
+========================= */
+export const updateCompanyConfig = async (companyId, payload) => {
+    try {
+        const updatedConfig = await apiRequest(`/company/${companyId}/config`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+        });
+        return { success: true, data: updatedConfig, message: "Company config updated successfully" };
+    } catch (err) {
+        console.error("Failed to update company config:", err);
+        return { success: false, data: null, message: "Company config update failed" };
+    }
+};

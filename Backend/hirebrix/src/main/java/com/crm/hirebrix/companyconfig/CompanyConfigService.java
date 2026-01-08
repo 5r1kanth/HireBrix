@@ -19,8 +19,30 @@ public class CompanyConfigService {
     }
 
     public CompanyConfig updateConfig(String companyId, CompanyConfig newConfig) {
-        newConfig.setCompanyId(companyId);
-        return configRepository.save(newConfig);
+
+        CompanyConfig existing = configRepository
+                .findByCompanyId(companyId)
+                .orElseThrow(() -> new RuntimeException("Config not found"));
+
+        existing.setRoles(newConfig.getRoles());
+        existing.setUserStatuses(newConfig.getUserStatuses());
+        existing.setDepartments(newConfig.getDepartments());
+
+        return configRepository.save(existing);
     }
+
+    public boolean isValidRole(String companyId, String role) {
+        return getConfigForCompany(companyId).getRoles().contains(role);
+    }
+
+    public boolean isValidStatus(String companyId, String status) {
+        return getConfigForCompany(companyId).getUserStatuses().contains(status);
+    }
+
+    public boolean isValidDepartment(String companyId, String dept) {
+        return getConfigForCompany(companyId).getDepartments().contains(dept);
+    }
+
+
 }
 

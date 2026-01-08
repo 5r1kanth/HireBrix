@@ -1,3 +1,6 @@
+import AddUserForm from "@/components/Dashboard/AddUserForm";
+import ConsultancyDetails from "@/components/Dashboard/ConsultancyDetails";
+import GenerateReport from "@/components/Dashboard/GenerateReport";
 import {
   Squares2X2Icon,
   UsersIcon,
@@ -31,10 +34,24 @@ export const sidebarContents = [
     submenu: [{ name: "All Consultants" }, { name: "Add Consultant" }],
   },
   {
+    name: "Consultancy",
+    icon: Squares2X2Icon,
+  },
+  {
     name: "Reports",
     icon: Squares2X2Icon,
   },
 ];
+
+export const sectionComponents = {
+  Consultancy: ConsultancyDetails,
+  Reports: GenerateReport,
+  "Add Admin": AddUserForm,
+  "Add Manager": AddUserForm,
+  "Add Team Lead": AddUserForm,
+  "Add Recruiter": AddUserForm,
+  "Add Consultant": AddUserForm,
+};
 
 /* =========================
    SIDEBAR FOOTER

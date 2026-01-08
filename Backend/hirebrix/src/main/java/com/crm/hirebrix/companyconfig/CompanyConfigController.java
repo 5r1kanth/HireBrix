@@ -1,5 +1,6 @@
 package com.crm.hirebrix.companyconfig;
 
+import com.crm.hirebrix.common.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,8 +12,9 @@ public class CompanyConfigController {
     private CompanyConfigService configService;
 
     @GetMapping("/{companyId}/config")
-    public CompanyConfig getCompanyConfig(@PathVariable String companyId) {
-        return configService.getConfigForCompany(companyId);
+    public ApiResponse<CompanyConfig> getCompanyConfig(@PathVariable String companyId) {
+        CompanyConfig companyConfig = configService.getConfigForCompany(companyId);
+        return new ApiResponse<>(true, companyConfig);
     }
 
     @PutMapping("/{companyId}/config")

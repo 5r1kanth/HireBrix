@@ -21,6 +21,23 @@ export const updateUser = (userId, user) => {
 };
 
 /* =========================
+   BULK UPDATE USERS (NEW)
+========================= */
+export const bulkUpdateUsers = ({ companyId, userIds, status, role, department, deleteUsers, restore }) => {
+    return apiRequest(`/users/bulk-update?companyId=${companyId}`, {
+        method: "POST",
+        body: JSON.stringify({
+            userIds,
+            status,
+            role,
+            department,
+            delete: deleteUsers,
+            restore,
+        }),
+    });
+};
+
+/* =========================
    Resend Invite
 ========================= */
 export const resendInvite = (userId) => {

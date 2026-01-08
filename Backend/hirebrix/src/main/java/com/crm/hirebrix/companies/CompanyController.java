@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/companies")
-@CrossOrigin(origins = "http://localhost:3000")
 public class CompanyController {
 
     private final CompanyService companyService;
@@ -31,6 +30,23 @@ public class CompanyController {
     @GetMapping("/{id}")
     public ApiResponse<Company> getCompanyById(@PathVariable String id) {
         Company company = companyService.getCompanyById(id);
+        System.out.println("Testing"+company);
+        if (company != null) {
+            return new ApiResponse<>(true, company);
+        } else {
+            return new ApiResponse<>(false, null);
+        }
+    }
+
+    /* =========================
+       Update company general details
+    ========================== */
+    @PutMapping("/{id}")
+    public ApiResponse<Company> updateCompany(
+            @PathVariable String id,
+            @RequestBody Company updatedCompany
+    ) {
+        Company company = companyService.updateCompany(id, updatedCompany);
         if (company != null) {
             return new ApiResponse<>(true, company);
         } else {

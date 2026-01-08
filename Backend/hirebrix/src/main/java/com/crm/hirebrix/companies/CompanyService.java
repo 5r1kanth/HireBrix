@@ -32,4 +32,21 @@ public class CompanyService {
         Optional<Company> company = companyRepository.findById(id);
         return company.orElse(null);
     }
+
+    /* =========================
+       Update company general info
+    ========================== */
+    public Company updateCompany(String id, Company updatedCompany) {
+        Optional<Company> existingOpt = companyRepository.findById(id);
+        if (existingOpt.isEmpty()) {
+            return null; // company not found
+        }
+
+        Company existing = existingOpt.get();
+        if (updatedCompany.getName() != null) existing.setName(updatedCompany.getName());
+        if (updatedCompany.getDomain() != null) existing.setDomain(updatedCompany.getDomain());
+        if (updatedCompany.getStatus() != null) existing.setStatus(updatedCompany.getStatus());
+
+        return companyRepository.save(existing);
+    }
 }

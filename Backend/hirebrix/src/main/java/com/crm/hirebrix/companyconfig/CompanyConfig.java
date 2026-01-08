@@ -17,6 +17,7 @@ public class CompanyConfig {
 
     private List<String> roles;
     private List<String> userStatuses;
+    private List<String> departments; // ✅ ADD THIS
 
     public static CompanyConfig defaultForCompany(String companyId) {
         CompanyConfig config = new CompanyConfig();
@@ -38,8 +39,14 @@ public class CompanyConfig {
                 "Pending"
         ));
 
+        config.setDepartments(List.of(
+                "HR",
+                "Engineering",
+                "Sales",
+                "Operations",
+                "Hyderabad"
+        ));
+
         return config;
     }
 }
-
-

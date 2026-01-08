@@ -1,10 +1,12 @@
 package com.crm.hirebrix.users;
 
 import com.crm.hirebrix.common.NameUtils;
+import com.crm.hirebrix.companyconfig.CompanyConfigService;
 import com.crm.hirebrix.invites.Invite;
 import com.crm.hirebrix.invites.InviteService;
 import com.crm.hirebrix.invites.InviteRepository;
 import com.crm.hirebrix.security.JwtService;
+import com.crm.hirebrix.users.dto.BulkUserUpdateRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
@@ -23,15 +25,17 @@ public class UserService {
     private final InviteRepository inviteRepository;
     private final JwtService jwtService;
     private final InviteService inviteService;
+    private final CompanyConfigService companyConfigService;
 
     public UserService(UserRepository userRepository,
                        InviteRepository inviteRepository,
                        JwtService jwtService,
-                       InviteService inviteService) {
+                       InviteService inviteService, CompanyConfigService companyConfigService) {
         this.userRepository = userRepository;
         this.inviteRepository = inviteRepository;
         this.jwtService = jwtService;
         this.inviteService = inviteService;
+        this.companyConfigService = companyConfigService;
     }
 
     /* =========================
@@ -51,6 +55,14 @@ public class UserService {
                         throw new IllegalArgumentException("User already exists and is active");
                     }
                 });
+
+        if (!companyConfigService.isValidRole(user.getCompanyId(), user.getRole())) {
+            throw new IllegalArgumentException("Invalid role");
+        }
+        if (user.getDepartment() != null &&
+                !companyConfigService.isValidDepartment(user.getCompanyId(), user.getDepartment())) {
+            throw new IllegalArgumentException("Invalid department");
+        }
 
         user.setFirstName(NameUtils.normalize(user.getFirstName()));
         user.setMiddleName(NameUtils.normalize(user.getMiddleName()));
@@ -117,6 +129,21 @@ public class UserService {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        if (user.getRole() != null &&
+                !companyConfigService.isValidRole(existing.getCompanyId(), user.getRole())) {
+            throw new IllegalArgumentException("Invalid role");
+        }
+
+        if (user.getStatus() != null &&
+                !companyConfigService.isValidStatus(existing.getCompanyId(), user.getStatus())) {
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        if (user.getDepartment() != null &&
+                !companyConfigService.isValidDepartment(existing.getCompanyId(), user.getDepartment())) {
+            throw new IllegalArgumentException("Invalid department");
+        }
+
         boolean emailChanged = !existing.getEmail().equalsIgnoreCase(user.getEmail());
 
         existing.setFirstName(NameUtils.normalize(user.getFirstName()));
@@ -134,6 +161,96 @@ public class UserService {
 
         return userRepository.save(existing);
     }
+
+    public int bulkUpdateUsers(String companyId, BulkUserUpdateRequest request) {
+
+        if (request.getUserIds() == null || request.getUserIds().isEmpty()) {
+            throw new IllegalArgumentException("User IDs are required");
+        }
+
+        if (Boolean.TRUE.equals(request.getDelete()) && Boolean.TRUE.equals(request.getRestore())) {
+            throw new IllegalArgumentException("Cannot delete and restore users at the same time");
+        }
+
+        // 🔒 VALIDATE BULK FIELD VALUES ONCE
+        if (request.getRole() != null &&
+                !companyConfigService.isValidRole(companyId, request.getRole())) {
+            throw new IllegalArgumentException("Invalid role");
+        }
+
+        if (request.getStatus() != null &&
+                !companyConfigService.isValidStatus(companyId, request.getStatus())) {
+            throw new IllegalArgumentException("Invalid status");
+        }
+
+        if (request.getDepartment() != null &&
+                !companyConfigService.isValidDepartment(companyId, request.getDepartment())) {
+            throw new IllegalArgumentException("Invalid department");
+        }
+
+        List<User> users = userRepository.findByIdIn(request.getUserIds());
+        Instant now = Instant.now();
+        int updatedCount = 0;
+
+        for (User user : users) {
+
+            // 🔒 COMPANY ISOLATION
+            if (!user.getCompanyId().equals(companyId)) {
+                continue;
+            }
+
+            boolean changed = false;
+
+            // 🗑 SOFT DELETE
+            if (Boolean.TRUE.equals(request.getDelete()) && !user.isDeleted()) {
+                user.setDeleted(true);
+                user.setDeletedAt(now);
+
+                if ("Active".equalsIgnoreCase(user.getStatus())) {
+                    user.setStatus("Inactive");
+                }
+                changed = true;
+            }
+
+            // ♻ RESTORE
+            if (Boolean.TRUE.equals(request.getRestore()) && user.isDeleted()) {
+                user.setDeleted(false);
+                user.setDeletedAt(null);
+                changed = true;
+            }
+
+            // 🔁 STATUS UPDATE
+            if (request.getStatus() != null &&
+                    !request.getStatus().equals(user.getStatus())) {
+                user.setStatus(request.getStatus());
+                changed = true;
+            }
+
+            // 🧑 ROLE UPDATE
+            if (request.getRole() != null &&
+                    !request.getRole().equals(user.getRole())) {
+                user.setRole(NameUtils.normalize(request.getRole()));
+                changed = true;
+            }
+
+            // 🏢 DEPARTMENT UPDATE
+            if (request.getDepartment() != null &&
+                    !request.getDepartment().equals(user.getDepartment())) {
+                user.setDepartment(request.getDepartment());
+                changed = true;
+            }
+
+            if (changed) {
+                user.setUpdatedAt(now);
+                updatedCount++;
+            }
+        }
+
+        userRepository.saveAll(users);
+        return updatedCount;
+    }
+
+
 
     /* =========================
        HANDLE EMAIL CHANGE

@@ -1,14 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Sidebar from "@/components/Dashboard/Sidebar";
 import Topbar from "@/components/Dashboard/Topbar";
 import UsersTable from "@/components/Dashboard/UsersTable";
 import DashboardMetrics from "@/components/Dashboard/DashboardMetrics";
-import AddUserForm from "@/components/Dashboard/AddUserForm";
 
-import { sidebarContents, sidebarFooter, usersColumns } from "@/data/adminData";
+import { sidebarContents, sectionComponents, sidebarFooter, usersColumns } from "@/data/adminData";
 import { sidebarHeader } from "@/data/consultancyData";
 
-import { getUsersByCompany, getDeletedUsersByCompany, updateUser, softDeleteUser, restoreUser, resendInvite } from "@/api/users.api";
+import { getUsersByCompany, getDeletedUsersByCompany, updateUser, softDeleteUser, restoreUser, resendInvite, bulkUpdateUsers } from "@/api/users.api";
 // import { logout } from "@/api/auth.api";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -21,7 +20,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
 
-  const { user, companyConfig, loading: authLoading, logout } = useAuth();
+  const { user, companyConfig, loading: authLoading, logout, companyVersion } = useAuth();
 
   const toast = useToast();
 
@@ -48,7 +47,7 @@ export default function Admin() {
 
   useEffect(() => {
     fetchAllUsers();
-  }, [user]);
+  }, [user, companyVersion]);
 
   const activeUsers = useMemo(() => allUsers.filter((u) => !u.deleted), [allUsers]);
   const deletedUsers = useMemo(() => allUsers.filter((u) => u.deleted), [allUsers]);
@@ -151,11 +150,41 @@ export default function Admin() {
       setShowDeleted(false);
       return;
     }
+    if (item.name) {
+      setSelectedSection(item.name);
+      setActiveRole(null);
+      setShowDeleted(false);
+      return;
+    }
 
     setActiveRole(null);
     setSelectedSection(null);
     setShowDeleted(false);
   }, []);
+
+  const handleBulkUpdate = async ({ ids, field, value }) => {
+    try {
+      setLoading(true);
+
+      const payload = { companyId: user.companyId, userIds: ids };
+
+      // Map UI fields → backend fields
+      if (field === "status") payload.status = value;
+      if (field === "role") payload.role = value;
+      if (field === "department") payload.department = value;
+      if (field === "delete") payload.deleteUsers = true;
+      if (field === "restore") payload.restore = true;
+
+      await bulkUpdateUsers(payload);
+
+      toast.success("Users updated successfully");
+      fetchAllUsers();
+    } catch (error) {
+      toast.error(error?.message || "Bulk update failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex p-2 gap-1 bg-gray-100 h-screen">
@@ -173,8 +202,8 @@ export default function Admin() {
         <Topbar user={user} onLogout={logout} onMenuClick={toggleSidebar} />
 
         <div className="flex-1 rounded-md gap-1 flex flex-col items-center justify-center">
-          {addRole ? (
-            <AddUserForm role={addRole} onAddUser={handleAddUser} />
+          {selectedSection && sectionComponents[selectedSection] ? (
+            React.createElement(sectionComponents[selectedSection], { companyConfig, role: addRole, onAddUser: handleAddUser })
           ) : (
             <>
               <DashboardMetrics
@@ -204,6 +233,7 @@ export default function Admin() {
                 onDelete={handleDeleteUser}
                 onRestore={handleRestoreUser}
                 onResendInvite={handleResendInvite}
+                onSaveBulk={handleBulkUpdate}
                 showDeleted={showDeleted}
                 activeRole={activeRole}
                 loading={loading}
