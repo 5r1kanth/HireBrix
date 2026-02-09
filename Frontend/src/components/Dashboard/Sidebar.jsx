@@ -6,6 +6,8 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
   const [openDropdowns, setOpenDropdowns] = useState([]);
   const [activeItem, setActiveItem] = useState(null);
 
+  console.log(user.picture)
+
   const { logout } = useAuth();
 
   const toggleDropdown = (name) => setOpenDropdowns((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
