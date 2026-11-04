@@ -1,6 +1,7 @@
 package com.crm.hirebrix.users;
 
 import com.crm.hirebrix.common.NameUtils;
+import com.crm.hirebrix.companyconfig.CompanyConfig;
 import com.crm.hirebrix.companyconfig.CompanyConfigService;
 import com.crm.hirebrix.invites.Invite;
 import com.crm.hirebrix.invites.InviteService;
@@ -15,7 +16,9 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -46,38 +49,42 @@ public class UserService {
             throw new IllegalArgumentException("Email and Company ID are required");
         }
 
-//        userRepository.findByEmailAndCompanyIdAndIsDeletedFalse(user.getEmail(), user.getCompanyId())
-//                .ifPresent(u -> { throw new IllegalArgumentException("User already exists"); });
+        String email = user.getEmail().trim().toLowerCase(Locale.ROOT);
+        user.setEmail(email);
 
-        userRepository.findByEmailAndCompanyIdAndIsDeletedFalse(user.getEmail(), user.getCompanyId())
-                .ifPresent(existingUser -> {
-                    if ("Active".equalsIgnoreCase(existingUser.getStatus())) {
-                        throw new IllegalArgumentException("User already exists and is active");
-                    }
-                });
-
-        if (!companyConfigService.isValidRole(user.getCompanyId(), user.getRole())) {
-            throw new IllegalArgumentException("Invalid role");
+        User existingUser = userRepository.findByEmail(email).orElse(null);
+        if (existingUser != null && !Objects.equals(existingUser.getCompanyId(), user.getCompanyId())) {
+            throw new IllegalArgumentException("Email is already associated with another company");
         }
+        if (existingUser != null && !existingUser.isDeleted()
+                && "Active".equalsIgnoreCase(existingUser.getStatus())) {
+            throw new IllegalArgumentException("User already exists and is active");
+        }
+
+        CompanyConfig config = companyConfigService.getConfigForCompany(user.getCompanyId());
+        String canonicalRole = canonicalRole(config, user.getRole());
         if (user.getDepartment() != null &&
-                !companyConfigService.isValidDepartment(user.getCompanyId(), user.getDepartment())) {
+                !config.getDepartments().contains(user.getDepartment())) {
             throw new IllegalArgumentException("Invalid department");
         }
 
-        user.setFirstName(NameUtils.normalize(user.getFirstName()));
-        user.setMiddleName(NameUtils.normalize(user.getMiddleName()));
-        user.setLastName(NameUtils.normalize(user.getLastName()));
-        user.setRole(NameUtils.normalize(user.getRole()));
-        user.setFullName(formFullName(user.getFirstName(), user.getMiddleName(), user.getLastName()));
+        User userToSave = existingUser == null ? user : existingUser;
+        userToSave.setEmail(email);
+        userToSave.setCompanyId(user.getCompanyId());
+        userToSave.setFirstName(NameUtils.normalize(user.getFirstName()));
+        userToSave.setMiddleName(NameUtils.normalize(user.getMiddleName()));
+        userToSave.setLastName(NameUtils.normalize(user.getLastName()));
+        userToSave.setRole(canonicalRole);
+        userToSave.setDepartment(user.getDepartment());
+        userToSave.setFullName(formFullName(userToSave.getFirstName(), userToSave.getMiddleName(), userToSave.getLastName()));
 
-        user.setStatus("Invited");
-        user.setCreatedAt(Instant.now());
-        user.setUpdatedAt(Instant.now());
-        user.setInvitedAt(Instant.now());
-        user.setDeleted(false);
-        user.setDeletedAt(null);
+        userToSave.setStatus("Invited");
+        userToSave.setUpdatedAt(Instant.now());
+        userToSave.setInvitedAt(Instant.now());
+        userToSave.setDeleted(false);
+        userToSave.setDeletedAt(null);
 
-        return userRepository.save(user);
+        return userRepository.save(userToSave);
     }
 
     /* =========================
@@ -129,27 +136,24 @@ public class UserService {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        if (user.getRole() != null &&
-                !companyConfigService.isValidRole(existing.getCompanyId(), user.getRole())) {
-            throw new IllegalArgumentException("Invalid role");
-        }
+        CompanyConfig config = companyConfigService.getConfigForCompany(existing.getCompanyId());
+        String canonicalRole = user.getRole() == null ? existing.getRole() : canonicalRole(config, user.getRole());
 
-        if (user.getStatus() != null &&
-                !companyConfigService.isValidStatus(existing.getCompanyId(), user.getStatus())) {
+        if (user.getStatus() != null && !config.getUserStatuses().contains(user.getStatus())) {
             throw new IllegalArgumentException("Invalid status");
         }
 
-        if (user.getDepartment() != null &&
-                !companyConfigService.isValidDepartment(existing.getCompanyId(), user.getDepartment())) {
-            throw new IllegalArgumentException("Invalid department");
-        }
+//        if (user.getDepartment() != null &&
+//                !companyConfigService.isValidDepartment(existing.getCompanyId(), user.getDepartment())) {
+//            throw new IllegalArgumentException("Invalid department");
+//        }
 
         boolean emailChanged = !existing.getEmail().equalsIgnoreCase(user.getEmail());
 
         existing.setFirstName(NameUtils.normalize(user.getFirstName()));
         existing.setMiddleName(NameUtils.normalize(user.getMiddleName()));
         existing.setLastName(NameUtils.normalize(user.getLastName()));
-        existing.setRole(NameUtils.normalize(user.getRole()));
+        existing.setRole(canonicalRole);
         existing.setStatus(user.getStatus());
         existing.setDepartment(user.getDepartment());
         existing.setFullName(formFullName(user.getFirstName(), user.getMiddleName(), user.getLastName()));
@@ -173,22 +177,19 @@ public class UserService {
         }
 
         // 🔒 VALIDATE BULK FIELD VALUES ONCE
-        if (request.getRole() != null &&
-                !companyConfigService.isValidRole(companyId, request.getRole())) {
-            throw new IllegalArgumentException("Invalid role");
-        }
+        CompanyConfig config = companyConfigService.getConfigForCompany(companyId);
+        String canonicalRole = request.getRole() == null ? null : canonicalRole(config, request.getRole());
 
-        if (request.getStatus() != null &&
-                !companyConfigService.isValidStatus(companyId, request.getStatus())) {
+        if (request.getStatus() != null && !config.getUserStatuses().contains(request.getStatus())) {
             throw new IllegalArgumentException("Invalid status");
         }
 
-        if (request.getDepartment() != null &&
-                !companyConfigService.isValidDepartment(companyId, request.getDepartment())) {
+        if (request.getDepartment() != null && !config.getDepartments().contains(request.getDepartment())) {
             throw new IllegalArgumentException("Invalid department");
         }
 
         List<User> users = userRepository.findByIdIn(request.getUserIds());
+        List<User> changedUsers = new java.util.ArrayList<>();
         Instant now = Instant.now();
         int updatedCount = 0;
 
@@ -229,7 +230,7 @@ public class UserService {
             // 🧑 ROLE UPDATE
             if (request.getRole() != null &&
                     !request.getRole().equals(user.getRole())) {
-                user.setRole(NameUtils.normalize(request.getRole()));
+                user.setRole(canonicalRole);
                 changed = true;
             }
 
@@ -243,10 +244,13 @@ public class UserService {
             if (changed) {
                 user.setUpdatedAt(now);
                 updatedCount++;
+                changedUsers.add(user);
             }
         }
 
-        userRepository.saveAll(users);
+        if (!changedUsers.isEmpty()) {
+            userRepository.saveAll(changedUsers);
+        }
         return updatedCount;
     }
 
@@ -255,6 +259,16 @@ public class UserService {
     /* =========================
        HANDLE EMAIL CHANGE
     ========================= */
+    private String canonicalRole(CompanyConfig config, String role) {
+        if (role == null) {
+            throw new IllegalArgumentException("Invalid role");
+        }
+        return config.getRoles().stream()
+                .filter(configuredRole -> configuredRole.equalsIgnoreCase(role.trim()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid role"));
+    }
+
     private void handleEmailChange(User user, String newEmail) {
         user.setEmail(newEmail);
         user.setStatus("Invited");
@@ -319,10 +333,9 @@ public class UserService {
                         companyId, keyword,
                         companyId, keyword,
                         companyId, keyword,
-                        companyId, keyword
+                companyId, keyword,
+                Sort.by(Sort.Direction.DESC, "createdAt")
                 );
-
-        results.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
         return results;
     }
 

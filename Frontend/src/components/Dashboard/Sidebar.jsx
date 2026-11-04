@@ -6,8 +6,6 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
   const [openDropdowns, setOpenDropdowns] = useState([]);
   const [activeItem, setActiveItem] = useState(null);
 
-  console.log(user.picture)
-
   const { logout } = useAuth();
 
   const toggleDropdown = (name) => setOpenDropdowns((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
@@ -22,23 +20,23 @@ export default function Sidebar({ header, user, contents, footer, collapsed, onM
   };
 
   return (
-    <aside className={`flex flex-col h-[calc(100vh-16px)] bg-white border-r border-gray-300 shadow-md transition-all duration-300 rounded-md ${collapsed ? "w-16" : "w-1/6"}`}>
+    <aside className={`flex flex-col h-full bg-white border-r border-gray-300 shadow-md transition-all duration-300 rounded-md ${collapsed ? "w-16" : "w-1/6"}`}>
       {/* Logo / Header */}
       <div
-        className={`flex items-center gap-3 px-4 py-2 cursor-pointer hover:bg-gray-100 transition shrink-0 shadow-sm ${collapsed && "justify-center"}`}
+        className={`flex items-center gap-3 px-4 h-14 cursor-pointer hover:bg-gray-100 transition shrink-0 shadow-sm ${collapsed ? "justify-center" : ""}`}
         onClick={() => {
           setActiveItem(null);
           onSelect?.(null);
         }}>
         <img src={header.logo} alt="logo" className="w-8 h-8" />
-        {!collapsed && (
-          <div className="text-left">
+        <div className={`flex items-center overflow-hidden transition-all duration-300 ease-in-out ${collapsed ? "max-w-0 opacity-0" : "max-w-[240px] opacity-100"}`}>
+          <div className="text-left min-w-0">
             <div className="text-xl font-extrabold uppercase bg-gradient-to-r from-blue-500 to-green-400 bg-clip-text text-transparent">HireBrix</div>
             <div className="text-md tracking-wide font-bold -mt-2">
               Track <span className="bg-gradient-to-r from-blue-500 to-green-400 bg-clip-text text-transparent">&</span> Hire
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* User Info */}

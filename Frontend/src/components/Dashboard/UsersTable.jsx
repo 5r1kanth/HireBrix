@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { ChevronLeftIcon, ChevronRightIcon, PencilSquareIcon, CheckIcon, XMarkIcon, TrashIcon, ArrowPathIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
-import { rowHeight } from "@/data/adminData";
+import { PencilSquareIcon, CheckIcon, XMarkIcon, TrashIcon, ArrowPathIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
+import { normalizeRole, rowHeight } from "@/data/adminData";
 import SearchInput from "./SearchInput";
 import { useAuth } from "@/context/AuthContext";
 
@@ -42,7 +42,7 @@ export default function UsersTable({
   const filteredData = useMemo(() => {
     return data.filter((u) => {
       const matchDeleted = showDeleted ? u.deleted : !u.deleted;
-      const matchRole = activeRole ? u.role === activeRole : true;
+      const matchRole = activeRole ? normalizeRole(u.role) === normalizeRole(activeRole) : true;
       const matchSearch = !searchTerm || `${u.firstName} ${u.lastName} ${u.email}`.toLowerCase().includes(searchTerm.toLowerCase());
 
       return matchDeleted && matchRole && matchSearch;
@@ -129,20 +129,8 @@ export default function UsersTable({
     return <span className={`${base} ${map[status] || "bg-gray-100 text-gray-700"}`}>{status}</span>;
   };
 
-  const getVisiblePages = () => {
-    const pages = [];
-    if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) pages.push(i);
-      return pages;
-    }
-    let start = Math.max(1, page - 2);
-    let end = Math.min(totalPages, page + 2);
-    if (start === 1) end = 5;
-    else if (end === totalPages) start = totalPages - 4;
-    for (let i = start; i <= end; i++) pages.push(i);
-    return pages;
-  };
-  const visiblePages = getVisiblePages();
+  const pageStart = filteredData.length ? (page - 1) * itemsPerPage + 1 : 0;
+  const pageEnd = Math.min(page * itemsPerPage, filteredData.length);
 
   return (
     <div className="bg-white rounded-md shadow p-2 flex flex-col relative">
@@ -295,7 +283,7 @@ export default function UsersTable({
                         </td>
                       )
                     ) : (
-                      <td key={col.accessor} className="p-2 text-center">
+                      <td key={col.accessor} className="p-2 text-center overflow-hidden">
                         {col.accessor === "status" ? getStatusBadge(row.status) : row[col.accessor] || "-"}
                       </td>
                     )
@@ -346,18 +334,17 @@ export default function UsersTable({
       </div>
 
       {/* PAGINATION */}
-      <div className="flex items-center justify-center gap-2 mt-3">
-        <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-          <ChevronLeftIcon className="w-5 h-5" />
-        </button>
-        {getVisiblePages().map((n) => (
-          <button key={n} onClick={() => setPage(n)} className={`w-8 h-8 border rounded ${n === page ? "bg-gray-700 text-white" : "hover:bg-gray-100"}`}>
-            {n}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 pt-2 text-[11px] text-gray-600">
+        <span>Showing {pageStart}-{pageEnd} of {filteredData.length}</span>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className="rounded border border-gray-300 px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50">
+            Prev
           </button>
-        ))}
-        <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-          <ChevronRightIcon className="w-5 h-5" />
-        </button>
+          <span>Page {page} / {totalPages}</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="rounded border border-gray-300 px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50">
+            Next
+          </button>
+        </div>
       </div>
 
       {/* DELETE MODAL */}

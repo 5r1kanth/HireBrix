@@ -1,7 +1,6 @@
 import React from "react";
 
-// Accept skills as props
-export default function SkillSet({ skills }) {
+export default function SkillSet({ skills = [] }) {
   // Group skills by years of experience
   const groupedSkills = skills.reduce((acc, skill) => {
     if (!acc[skill.years]) acc[skill.years] = [];
@@ -19,7 +18,9 @@ export default function SkillSet({ skills }) {
       <h2 className="p-2 text-sm font-semibold text-gray-600 bg-blue-100 text-center rounded-t-md">Skills</h2>
 
       <div className="grid grid-cols-1 gap-1">
-        {sortedYears.map((year) => (
+          {sortedYears.length === 0 ? (
+            <p className="p-2 text-xs text-gray-500">No skills on file.</p>
+          ) : sortedYears.map((year) => (
           <div
             key={year}
             className="bg-white rounded-md shadow px-2 py-1 border border-gray-200 hover:shadow-md hover:bg-gray-100 transition"

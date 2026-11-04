@@ -1,16 +1,11 @@
-import { ClipboardDocumentListIcon, CalendarDaysIcon, UserGroupIcon, UserCircleIcon, BriefcaseIcon, Cog6ToothIcon, AcademicCapIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
-import ConsultantPhoto from "@/assets/userProfile.svg"; // replace with consultant photo
-
-export const consultantInfo = {
-  name: "Srikanth Pamulapati",
-  photo: ConsultantPhoto, // can use URL or imported image
-};
+import { ClipboardDocumentListIcon, CalendarDaysIcon, Cog6ToothIcon, AcademicCapIcon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 
 export const sidebarContents = [
   {
     name: "My Submissions",
     icon: ClipboardDocumentListIcon,
     submenu: [
+      { name: "All Time", href: "/consultant/submissions/all-time" },
       { name: "Last month", href: "/consultant/submissions/last-month" },
       { name: "Last week", href: "/consultant/submissions/last-week" },
       { name: "Today", href: "/consultant/submissions/today" },
@@ -29,31 +24,6 @@ export const sidebarContents = [
     name: "Skills & Experience",
     icon: AcademicCapIcon,
     href: "/consultant/Skills&Experience",
-  },
-  {
-    name: "Recruiters",
-    icon: UserGroupIcon,
-    submenu: [
-      { name: "Recruiter 1", href: "/Recruiter 1" },
-      { name: "Recruiter 2", href: "/Recruiter 2" },
-      { name: "Recruiter 3", href: "/Recruiter 3" },
-      { name: "Recruiter 4", href: "/Recruiter 4" },
-      { name: "Recruiter 5", href: "/Recruiter 5" },
-    ],
-  },
-  {
-    name: "Team Lead",
-    icon: UserCircleIcon,
-    submenu: [
-      { name: "Team Lead Name", href: "/TeamLeadName" },
-    ],
-  },
-  {
-    name: "Manager",
-    icon: BriefcaseIcon,
-    submenu: [
-      { name: "Manager Name", href: "/Managername" },
-    ],
   },
 ];
 

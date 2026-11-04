@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { roleMap } from "@/data/adminData";
+import { normalizeRole } from "@/data/adminData";
 
 export default function ProtectedRoute({ allowedRoles }) {
   const { user, loading } = useAuth();
@@ -16,7 +16,7 @@ export default function ProtectedRoute({ allowedRoles }) {
   }
 
   // 3️⃣ Normalize role names to match allowedRoles
-  const normalizedRole = roleMap[user.role] || user.role;
+  const normalizedRole = normalizeRole(user.role);
 
   // 4️⃣ If allowedRoles is provided, check if the user has permission
   if (allowedRoles && !allowedRoles.includes(normalizedRole)) {

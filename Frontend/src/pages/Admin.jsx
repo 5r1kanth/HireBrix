@@ -3,8 +3,9 @@ import Sidebar from "@/components/Dashboard/Sidebar";
 import Topbar from "@/components/Dashboard/Topbar";
 import UsersTable from "@/components/Dashboard/UsersTable";
 import DashboardMetrics from "@/components/Dashboard/DashboardMetrics";
+import ProfileDetails from "@/components/Dashboard/ProfileDetails";
 
-import { sidebarContents, sectionComponents, sidebarFooter, usersColumns } from "@/data/adminData";
+import { sidebarContents, sectionComponents, sidebarFooter, usersColumns, normalizeRole } from "@/data/adminData";
 import { sidebarHeader } from "@/data/consultancyData";
 
 import { getUsersByCompany, getDeletedUsersByCompany, updateUser, softDeleteUser, restoreUser, resendInvite, bulkUpdateUsers } from "@/api/users.api";
@@ -16,6 +17,7 @@ export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeRole, setActiveRole] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showDeleted, setShowDeleted] = useState(false);
@@ -55,11 +57,12 @@ export default function Admin() {
   const roleCounts = useMemo(
     () => ({
       Active: activeUsers.length,
-      Admin: activeUsers.filter((u) => u.role === "Admin").length,
-      Manager: activeUsers.filter((u) => u.role === "Manager").length,
-      "Team Lead": activeUsers.filter((u) => u.role === "Team Lead").length,
-      Recruiter: activeUsers.filter((u) => u.role === "Recruiter").length,
-      Consultant: activeUsers.filter((u) => u.role === "Consultant").length,
+      Admin: activeUsers.filter((u) => normalizeRole(u.role) === "Admin").length,
+      Manager: activeUsers.filter((u) => normalizeRole(u.role) === "Manager").length,
+      "Team Lead": activeUsers.filter((u) => normalizeRole(u.role) === "Team Lead").length,
+      Recruiter: activeUsers.filter((u) => normalizeRole(u.role) === "Recruiter").length,
+      "HR Manager": activeUsers.filter((u) => normalizeRole(u.role) === "HR Manager").length,
+      Consultant: activeUsers.filter((u) => normalizeRole(u.role) === "Consultant").length,
       Deleted: deletedUsers.length,
     }),
     [activeUsers, deletedUsers]
@@ -68,7 +71,7 @@ export default function Admin() {
   const displayedUsers = useMemo(() => {
     if (showDeleted) return deletedUsers;
     if (!activeRole || activeRole === "Active") return activeUsers;
-    return activeUsers.filter((u) => u.role === activeRole);
+    return activeUsers.filter((u) => normalizeRole(u.role) === activeRole);
   }, [activeRole, showDeleted, activeUsers, deletedUsers]);
 
   const addRole = selectedSection?.startsWith("Add ") && selectedSection.replace("Add ", "");
@@ -129,6 +132,7 @@ export default function Admin() {
   };
 
   const handleSidebarSelect = useCallback((item) => {
+    setShowProfile(false);
     if (!item) {
       setActiveRole(null);
       setSelectedSection(null);
@@ -162,6 +166,10 @@ export default function Admin() {
     setShowDeleted(false);
   }, []);
 
+  const footerItems = sidebarFooter.map((item) =>
+    item.name === "Settings" ? { ...item, onClick: () => handleSidebarSelect({ name: "Settings" }) } : item
+  );
+
   const handleBulkUpdate = async ({ ids, field, value }) => {
     try {
       setLoading(true);
@@ -187,22 +195,24 @@ export default function Admin() {
   };
 
   return (
-    <div className="flex p-2 gap-1 bg-gray-100 h-screen">
+    <div className="flex p-2 gap-1 bg-gray-100 h-screen overflow-hidden">
       <Sidebar
         header={sidebarHeader}
         user={user}
         contents={sidebarContents}
-        footer={sidebarFooter}
+        footer={footerItems}
         collapsed={!sidebarOpen}
         onMenuClick={toggleSidebar}
         onSelect={handleSidebarSelect}
       />
 
-      <div className="flex flex-col flex-1 gap-1">
-        <Topbar user={user} onLogout={logout} onMenuClick={toggleSidebar} />
+      <div className="flex flex-col flex-1 gap-1 overflow-hidden">
+        <Topbar user={user} onLogout={logout} onMenuClick={toggleSidebar} onSettings={() => handleSidebarSelect({ name: "Settings" })} onProfile={() => setShowProfile(true)} />
 
-        <div className="flex-1 rounded-md gap-1 flex flex-col items-center justify-center">
-          {selectedSection && sectionComponents[selectedSection] ? (
+        <div className="flex-1 rounded-md gap-1 flex flex-col overflow-auto">
+          {showProfile ? (
+            <ProfileDetails user={user} />
+          ) : selectedSection && sectionComponents[selectedSection] ? (
             React.createElement(sectionComponents[selectedSection], { companyConfig, role: addRole, onAddUser: handleAddUser })
           ) : (
             <>

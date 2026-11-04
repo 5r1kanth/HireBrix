@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import ThemeToggle from "../Theme/ThemeToggle";
 import { getUserById } from "@/api/users.api";
-import { roleMap, routeMap } from "@/data/adminData";
+import { normalizeRole, routeMap } from "@/data/adminData";
 
 export default function Login() {
   const [inviteToken, setInviteToken] = useState(null);
@@ -81,7 +81,7 @@ export default function Login() {
           localStorage.setItem("userId", data.userId);
 
           // Normalize role
-          const normalizedRole = roleMap[data.role] || data.role;
+          const normalizedRole = normalizeRole(data.role);
           localStorage.setItem("role", normalizedRole);
 
           // Fetch user details
@@ -91,9 +91,6 @@ export default function Login() {
             return;
           }
           setLoading(false);
-          localStorage.setItem("user", JSON.stringify(userDetails));
-
-          console.log(localStorage);
 
           window.location.href = routeMap[normalizedRole] || "/login";
         } catch (err) {

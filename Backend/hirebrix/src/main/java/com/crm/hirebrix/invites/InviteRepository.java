@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface InviteRepository extends MongoRepository<Invite, String> {
     Optional<Invite> findByEmail(String email);
     Optional<Invite> findByTokenHash(String tokenHash); // Use this for optimized lookup
+    Optional<Invite> findByTokenLookup(String tokenLookup);
+    List<Invite> findByTokenLookupIsNull();
 
     List<Invite> findByExpiresAtBeforeAndStatus(Instant now, String status);
 

@@ -28,6 +28,8 @@ public class Invite {
      */
     private String tokenHash;
 
+    private String tokenLookup;
+
     /**
      * Track Invite lifecycle
      */

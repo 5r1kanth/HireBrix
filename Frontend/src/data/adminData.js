@@ -14,6 +14,11 @@ import {
 ========================= */
 export const sidebarContents = [
   {
+    name: "Admins",
+    icon: UsersIcon,
+    submenu: [{ name: "All Admins" }, { name: "Add Admin" }],
+  },
+  {
     name: "Managers",
     icon: UsersIcon,
     submenu: [{ name: "All Managers" }, { name: "Add Manager" }],
@@ -27,6 +32,11 @@ export const sidebarContents = [
     name: "Recruiter",
     icon: UsersIcon,
     submenu: [{ name: "All Recruiters" }, { name: "Add Recruiter" }],
+  },
+  {
+    name: "HR Managers",
+    icon: UsersIcon,
+    submenu: [{ name: "All HR Managers" }, { name: "Add HR Manager" }],
   },
   {
     name: "Consultants",
@@ -45,11 +55,13 @@ export const sidebarContents = [
 
 export const sectionComponents = {
   Consultancy: ConsultancyDetails,
+  Settings: ConsultancyDetails,
   Reports: GenerateReport,
   "Add Admin": AddUserForm,
   "Add Manager": AddUserForm,
   "Add Team Lead": AddUserForm,
   "Add Recruiter": AddUserForm,
+  "Add HR Manager": AddUserForm,
   "Add Consultant": AddUserForm,
 };
 
@@ -82,6 +94,7 @@ export const ROLE_CONFIG = {
   Manager: "Add Manager",
   "Team Lead": "Add Team Lead",
   Recruiter: "Add Recruiter",
+  "HR Manager": "Add HR Manager",
   Consultant: "Add Consultant",
 };
 
@@ -92,6 +105,21 @@ export const roleMap = {
   Recruiter: "Recruiter",
   HRManager: "HR Manager",
   Consultant: "Consultant",
+};
+
+const canonicalRoles = {
+  admin: "Admin",
+  manager: "Manager",
+  "team lead": "Team Lead",
+  recruiter: "Recruiter",
+  "hr manager": "HR Manager",
+  hrmanager: "HR Manager",
+  consultant: "Consultant",
+};
+
+export const normalizeRole = (role) => {
+  const key = role?.trim().replace(/\s+/g, " ").toLowerCase();
+  return canonicalRoles[key] || role?.trim();
 };
 
 export const routeMap = {

@@ -2,11 +2,13 @@ import { Squares2X2Icon, BellIcon, ChevronDownIcon } from "@heroicons/react/24/o
 import { useState, useEffect, useRef } from "react";
 import ThemeToggle from "../Theme/ThemeToggle";
 import { getCompanyById } from "@/api/company.api";
+import { useAuth } from "@/context/AuthContext";
 
-export default function Topbar({ onMenuClick, user }) {
+export default function Topbar({ onMenuClick, user, onLogout, onSettings, onProfile }) {
   const [open, setOpen] = useState(false);
   const [company, setCompany] = useState(null);
   const dropdownRef = useRef();
+  const { logout } = useAuth();
 
   // Update currentUser whenever user prop changes
   useEffect(() => {
@@ -27,7 +29,13 @@ export default function Topbar({ onMenuClick, user }) {
   }, []);
 
   const handleLogout = () => {
-    user?.onLogout?.();
+    setOpen(false);
+    (onLogout || logout)();
+  };
+
+  const handleProfile = () => {
+    setOpen(false);
+    onProfile?.();
   };
 
   return (
@@ -67,8 +75,8 @@ export default function Topbar({ onMenuClick, user }) {
 
           {open && (
             <div className="absolute right-0 top-12 w-44 bg-white border border-gray-200 rounded-md shadow-md text-sm z-50 overflow-hidden">
-              <button className="w-full text-left px-3 py-2 hover:bg-gray-100 transition">Profile</button>
-              <button className="w-full text-left px-3 py-2 hover:bg-gray-100 transition">Settings</button>
+              <button onClick={handleProfile} className="w-full text-left px-3 py-2 hover:bg-gray-100 transition">Profile</button>
+              <button onClick={() => { setOpen(false); onSettings?.(); }} className="w-full text-left px-3 py-2 hover:bg-gray-100 transition">Settings</button>
               <button onClick={handleLogout} className="w-full text-left px-3 py-2 text-red-600 hover:bg-gray-100 transition">
                 Logout
               </button>

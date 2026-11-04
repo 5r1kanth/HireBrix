@@ -8,6 +8,7 @@ import java.util.Optional;
 public interface UserRepository extends MongoRepository<User, String> {
 
     Optional<User> findByEmail(String email);
+    List<User> findByEmailIn(List<String> emails);
     Optional<User> findByEmailAndCompanyIdAndIsDeletedFalse(String email, String companyId);
 
     // Active users, sorted by createdAt descending
@@ -41,7 +42,8 @@ public interface UserRepository extends MongoRepository<User, String> {
             String companyId1, String fullName,
             String companyId2, String email,
             String companyId3, String role,
-            String companyId4, String department
+            String companyId4, String department,
+            Sort sort
     );
 
     List<User> findByCompanyId(String companyId);

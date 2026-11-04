@@ -2,21 +2,31 @@ import { createUser, getUserById } from "./users.api";
 import apiRequest from "./apiClient";
 import { createCompany } from "./company.api";
 
-export async function fetchCurrentUser() {
+let currentUserRequest = null;
+
+export function fetchCurrentUser() {
+    if (currentUserRequest) return currentUserRequest;
+
     const userId = localStorage.getItem("userId");
+    const accessToken = localStorage.getItem("accessToken");
 
-    if (!userId) return null;
+    if (!userId || !accessToken) return Promise.resolve(null);
 
-    try {
-        const user = await getUserById(userId);
-        if (!user) return null;
+    currentUserRequest = getUserById(userId)
+        .then((user) => {
+            if (!user) return null;
 
-        localStorage.setItem("user", JSON.stringify(user));
-        return user;
-    } catch (err) {
+            return user;
+        })
+        .catch((err) => {
         console.error("Failed to fetch current user", err);
-        return null;
-    }
+            return null;
+        })
+        .finally(() => {
+            currentUserRequest = null;
+        });
+
+    return currentUserRequest;
 }
 
 export const logout = () => {
